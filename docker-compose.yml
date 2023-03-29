@@ -1,0 +1,16 @@
+version: '3'
+services:
+  server:
+    build: ./
+    ports:
+      - '8080:8080'
+    links:
+      - redis
+    environment:
+      PORT: 8080
+      REDIS_URL: 'redis://redis:6379'
+
+  redis:
+    image: redis:latest
+    ports:
+      - '6379:6379'
