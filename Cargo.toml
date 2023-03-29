@@ -1,0 +1,16 @@
+[package]
+name = "motorhead"
+version = "0.1.0"
+edition = "2021"
+authors = ["Sergio Prada <metal@getmetal.io>"]
+
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+actix-web = "4.3"
+env_logger = "0.10"
+futures-util = { version = "0.3.17", default-features = false, features = ["std"] }
+log = "0.4"
+redis = { version = "0.22", default-features = false, features = ["tokio-comp", "connection-manager"] }
+serde = { version = "1", features = ["derive"] }
