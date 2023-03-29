@@ -1,16 +1,29 @@
+use actix_web::{error, get, middleware, post, web, App, HttpResponse, HttpServer, Responder};
+use serde::{Deserialize, Serialize};
 use std::env;
 use std::io;
+use std::time::{SystemTime, UNIX_EPOCH};
+use log::info;
 
-use actix_web::{error, get, middleware, web, App, HttpResponse, HttpServer, Responder};
-use serde::Deserialize;
 
 #[derive(Deserialize)]
 pub struct MemoryMessage {
     message: String,
 }
 
-async fn create_memory(
-    web::Json(info): web::Json<MemoryMessage>,
+#[derive(Deserialize)]
+pub struct MemoryMessages {
+    messages: Vec<MemoryMessage>,
+}
+
+#[derive(Serialize)]
+struct HealthCheckResponse {
+    now: u128,
+}
+
+#[get("/sessions/{session_id}/memory")]
+pub async fn get_memory(
+    session_id: web::Path<String>,
     redis: web::Data<redis::Client>,
 ) -> actix_web::Result<impl Responder> {
     let mut conn = redis
@@ -18,76 +31,53 @@ async fn create_memory(
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    let res = redis::Cmd::lpush("foo", &info.message)
-        .query_async::<_, String>(&mut conn)
+    let res = redis::Cmd::lrange(&*session_id, 0, 10)
+        .query_async::<_, Vec<String>>(&mut conn)
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    // not strictly necessary, but successful SET operations return "OK"
-    if res == "OK" {
-        Ok(HttpResponse::Ok().body("successfully cached values"))
-    } else {
-        Ok(HttpResponse::InternalServerError().finish())
-    }
+    Ok(HttpResponse::Ok().json(res))
 }
 
-async fn get_memory2(redis: web::Data<redis::Client>) -> actix_web::Result<impl Responder> {
+#[post("/sessions/{session_id}/memory")]
+pub async fn post_memory(
+    session_id: web::Path<String>,
+    web::Json(memory_messages): web::Json<MemoryMessages>,
+    redis: web::Data<redis::Client>,
+) -> actix_web::Result<impl Responder> {
     let mut conn = redis
         .get_tokio_connection_manager()
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    let res = redis::Cmd::lrange("foo", 0, 0)
-        .query_async::<_, String>(&mut conn)
+    let messages: Vec<String> = memory_messages
+        .messages
+        .into_iter()
+        .map(|memory_message| memory_message.message)
+        .collect();
+
+    let res: i64 = redis::Cmd::lpush(&*session_id, messages)
+        .query_async::<_, i64>(&mut conn)
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    // not strictly necessary, but successful SET operations return "OK"
-    if res == "OK" {
-        Ok(HttpResponse::Ok().body("successfully cached values"))
-    } else {
-        Ok(HttpResponse::InternalServerError().finish())
-    }
+    info!("{}", format!("Redis response, {}", res));
+
+    Ok(HttpResponse::Ok())
 }
 
-async fn del_stuff(redis: web::Data<redis::Client>) -> actix_web::Result<impl Responder> {
-    let mut conn = redis
-        .get_tokio_connection_manager()
-        .await
-        .map_err(error::ErrorInternalServerError)?;
+#[get("/")]
+pub async fn healthcheck() -> actix_web::Result<impl Responder> {
+    let ms = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_millis();
 
-    let res = redis::Cmd::del(&["my_domain:one", "my_domain:two", "my_domain:three"])
-        .query_async::<_, usize>(&mut conn)
-        .await
-        .map_err(error::ErrorInternalServerError)?;
+    let res = HealthCheckResponse {
+        now: ms,
+    };
 
-    // not strictly necessary, but successful DEL operations return the number of keys deleted
-    if res == 3 {
-        Ok(HttpResponse::Ok().body("successfully deleted values"))
-    } else {
-        log::error!("deleted {res} keys");
-        Ok(HttpResponse::InternalServerError().finish())
-    }
-}
-
-#[get("/users/{user_id}/memory")]
-async fn get_memory(user_id: web::Path<String>, redis: web::Data<redis::Client>) -> actix_web::Result<impl Responder> {
-    let mut conn = redis
-        .get_tokio_connection_manager()
-        .await
-        .map_err(error::ErrorInternalServerError)?;
-
-    let res = redis::Cmd::lrange(&*user_id, 0, 0)
-        .query_async::<_, String>(&mut conn)
-        .await
-        .map_err(error::ErrorInternalServerError)?;
-
-    // not strictly necessary, but successful SET operations return "OK"
-    if res == "OK" {
-        Ok(HttpResponse::Ok().body("successfully cached values"))
-    } else {
-        Ok(HttpResponse::InternalServerError().finish())
-    }
+    Ok(web::Json(res))
 }
 
 #[actix_web::main]
@@ -103,13 +93,9 @@ async fn main() -> io::Result<()> {
         App::new()
             .app_data(web::Data::new(redis.clone()))
             .wrap(middleware::Logger::default())
+            .service(healthcheck)
             .service(get_memory)
-            .service(
-                web::resource("/memory")
-                    .route(web::post().to(create_memory))
-                    .route(web::get().to(get_memory2))
-                    .route(web::delete().to(del_stuff)),
-            )
+            .service(post_memory)
     })
     .workers(2)
     .bind(("0.0.0.0", 8080))?
