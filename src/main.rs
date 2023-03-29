@@ -31,7 +31,7 @@ async fn create_memory(
     }
 }
 
-async fn get_memory(redis: web::Data<redis::Client>) -> actix_web::Result<impl Responder> {
+async fn get_memory2(redis: web::Data<redis::Client>) -> actix_web::Result<impl Responder> {
     let mut conn = redis
         .get_tokio_connection_manager()
         .await
@@ -70,9 +70,24 @@ async fn del_stuff(redis: web::Data<redis::Client>) -> actix_web::Result<impl Re
     }
 }
 
-#[get("/users/{user_id}")]
-async fn get_user(user_id: web::Path<String>) -> HttpResponse {
-    HttpResponse::Ok().body(format!("User ID: {}", user_id))
+#[get("/users/{user_id}/memory")]
+async fn get_memory(user_id: web::Path<String>, redis: web::Data<redis::Client>) -> actix_web::Result<impl Responder> {
+    let mut conn = redis
+        .get_tokio_connection_manager()
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let res = redis::Cmd::lrange(&*user_id, 0, 0)
+        .query_async::<_, String>(&mut conn)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    // not strictly necessary, but successful SET operations return "OK"
+    if res == "OK" {
+        Ok(HttpResponse::Ok().body("successfully cached values"))
+    } else {
+        Ok(HttpResponse::InternalServerError().finish())
+    }
 }
 
 #[actix_web::main]
@@ -88,11 +103,11 @@ async fn main() -> io::Result<()> {
         App::new()
             .app_data(web::Data::new(redis.clone()))
             .wrap(middleware::Logger::default())
-            .service(get_user)
+            .service(get_memory)
             .service(
                 web::resource("/memory")
                     .route(web::post().to(create_memory))
-                    .route(web::get().to(get_memory))
+                    .route(web::get().to(get_memory2))
                     .route(web::delete().to(del_stuff)),
             )
     })
