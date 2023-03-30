@@ -1,6 +1,18 @@
 use actix_web::{delete, error, get, post, web, HttpResponse, Responder};
 use log::info;
 use serde::Deserialize;
+use std::collections::HashMap;
+use std::sync::Arc;
+use tokio;
+use tokio::sync::Mutex;
+
+pub struct AppState {
+    pub window_size: i64,
+}
+
+pub struct SessionState {
+    pub cleaning_up: Arc<Mutex<HashMap<String, bool>>>,
+}
 
 #[derive(Deserialize)]
 pub struct MemoryMessage {
@@ -15,7 +27,7 @@ pub struct MemoryMessages {
 #[get("/sessions/{session_id}/memory")]
 pub async fn get_memory(
     session_id: web::Path<String>,
-    window_size: web::Data<i64>,
+    data: web::Data<AppState>,
     redis: web::Data<redis::Client>,
 ) -> actix_web::Result<impl Responder> {
     let mut conn = redis
@@ -23,7 +35,7 @@ pub async fn get_memory(
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    let res = redis::Cmd::lrange(&*session_id, 0, (**window_size).try_into().unwrap())
+    let res = redis::Cmd::lrange(&*session_id, 0, data.window_size.try_into().unwrap())
         .query_async::<_, Vec<String>>(&mut conn)
         .await
         .map_err(error::ErrorInternalServerError)?;
@@ -35,7 +47,8 @@ pub async fn get_memory(
 pub async fn post_memory(
     session_id: web::Path<String>,
     web::Json(memory_messages): web::Json<MemoryMessages>,
-    window_size: web::Data<i64>,
+    data: web::Data<AppState>,
+    session_state: web::Data<Arc<SessionState>>,
     redis: web::Data<redis::Client>,
 ) -> actix_web::Result<impl Responder> {
     let mut conn = redis
@@ -56,8 +69,34 @@ pub async fn post_memory(
 
     info!("{}", format!("Redis response, {}", res));
 
-    if res > **window_size {
-        info!("Window size bigger!");
+    if res > data.window_size {
+        let state = session_state.into_inner();
+        let mut cleaning_up = state.cleaning_up.lock().await; // Use lock().await
+
+        if !cleaning_up.get(&*session_id).unwrap_or_else(|| &false) {
+            info!("Window size bigger!2");
+
+            cleaning_up.insert((&*session_id.to_string()).into(), true);
+            let cleaning_up = Arc::clone(&state.cleaning_up);
+            let session_id = session_id.to_string().clone();
+
+            tokio::spawn(async move {
+                info!("Inside job");
+                let half = &data.window_size / 2;
+                let res = redis::Cmd::lrange(
+                    &*session_id,
+                    half.try_into().unwrap(),
+                    data.window_size.try_into().unwrap(),
+                )
+                .query_async::<_, Vec<String>>(&mut conn)
+                .await;
+
+                info!("{:?}", res);
+
+                let mut lock = cleaning_up.lock().await;
+                lock.remove(&session_id);
+            });
+        }
     }
 
     Ok(HttpResponse::Ok())
@@ -66,7 +105,6 @@ pub async fn post_memory(
 #[delete("/sessions/{session_id}/memory")]
 pub async fn delete_memory(
     session_id: web::Path<String>,
-    window_size: web::Data<i64>,
     redis: web::Data<redis::Client>,
 ) -> actix_web::Result<impl Responder> {
     let mut conn = redis

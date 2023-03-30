@@ -14,3 +14,4 @@ futures-util = { version = "0.3.17", default-features = false, features = ["std"
 log = "0.4"
 redis = { version = "0.22", default-features = false, features = ["tokio-comp", "connection-manager"] }
 serde = { version = "1", features = ["derive"] }
+tokio = { version = "1", features = ["full"] }

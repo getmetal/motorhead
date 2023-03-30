@@ -1,9 +1,12 @@
 use actix_web::{middleware, web, App, HttpServer};
+use std::collections::HashMap;
 use std::env;
 use std::io;
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
 mod memory;
-use memory::{delete_memory, get_memory, post_memory};
+use memory::{delete_memory, get_memory, post_memory, AppState, SessionState};
 
 mod healthcheck;
 use healthcheck::get_health;
@@ -26,10 +29,17 @@ async fn main() -> io::Result<()> {
         .parse::<i64>()
         .unwrap_or_else(|_| 10);
 
+    let cleaning_up = Arc::new(Mutex::new(HashMap::new()));
+    let session_state = Arc::new(SessionState { cleaning_up });
+
     HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(redis.clone()))
+            .app_data(web::Data::new(AppState {
+                window_size: window_size,
+            }))
             .app_data(web::Data::new(window_size.clone()))
+            .app_data(web::Data::new(session_state.clone()))
             .wrap(middleware::Logger::default())
             .service(get_health)
             .service(get_memory)
