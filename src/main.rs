@@ -6,8 +6,9 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 
 mod memory;
-use memory::{delete_memory, get_memory, post_memory, AppState, SessionState};
-
+use memory::{delete_memory, get_memory, post_memory};
+mod models;
+use models::{AppState, SessionState};
 mod healthcheck;
 use healthcheck::get_health;
 

@@ -1,11 +1,6 @@
+use crate::models::HealthCheckResponse;
 use actix_web::{get, web, Responder};
-use serde::Serialize;
 use std::time::{SystemTime, UNIX_EPOCH};
-
-#[derive(Serialize)]
-struct HealthCheckResponse {
-    now: u128,
-}
 
 #[get("/")]
 pub async fn get_health() -> actix_web::Result<impl Responder> {

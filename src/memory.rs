@@ -1,30 +1,10 @@
 use actix_web::{delete, error, get, post, web, HttpResponse, Responder};
 use log::info;
-use serde::Deserialize;
-use std::collections::HashMap;
+use std::convert::TryInto;
 use std::sync::Arc;
 use tokio;
-use tokio::sync::Mutex;
 
-pub struct AppState {
-    pub window_size: i64,
-}
-
-pub struct SessionState {
-    pub cleaning_up: Arc<Mutex<HashMap<String, bool>>>,
-    pub openai_key: String,
-    pub reduce_method: String,
-}
-
-#[derive(Deserialize)]
-pub struct MemoryMessage {
-    message: String,
-}
-
-#[derive(Deserialize)]
-pub struct MemoryMessages {
-    messages: Vec<MemoryMessage>,
-}
+use crate::models::{AppState, MemoryMessages, MemoryResponse, SessionState};
 
 #[get("/sessions/{session_id}/memory")]
 pub async fn get_memory(
@@ -37,12 +17,26 @@ pub async fn get_memory(
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    let res = redis::Cmd::lrange(&*session_id, 0, data.window_size.try_into().unwrap())
-        .query_async::<_, Vec<String>>(&mut conn)
+    let lrange_key = &*session_id;
+    let get_key = format!("{}_context", &*session_id);
+
+    let (lrange_res, get_res): (Vec<String>, Option<String>) = redis::pipe()
+        .cmd("LRANGE")
+        .arg(lrange_key)
+        .arg(0)
+        .arg(data.window_size as isize)
+        .cmd("GET")
+        .arg(get_key)
+        .query_async(&mut conn)
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    Ok(HttpResponse::Ok().json(res))
+    let response = MemoryResponse {
+        messages: lrange_res,
+        context: get_res,
+    };
+
+    Ok(HttpResponse::Ok().json(response))
 }
 
 #[post("/sessions/{session_id}/memory")]
