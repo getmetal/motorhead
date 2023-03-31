@@ -8,7 +8,7 @@ use tokio::sync::Mutex;
 mod memory;
 use memory::{delete_memory, get_memory, post_memory};
 mod models;
-use models::{AppState, SessionState};
+use models::AppState;
 mod healthcheck;
 use healthcheck::get_health;
 
@@ -20,6 +20,7 @@ async fn main() -> io::Result<()> {
 
     let openai_key = env::var("OPENAI_API_KEY").unwrap_or("NOT_SET".to_string());
     let reduce_method = env::var("WINDOW_REDUCE_METHOD").unwrap_or("buffer".to_string());
+    let openai_client = openai_api::Client::new(&openai_key);
 
     if reduce_method == "summarization" && openai_key == "NOT_SET" {
         panic!("`OPENAI_API_KEY` is required if `summarization` is the `WINDOW_REDUCE_METHOD`");
@@ -37,20 +38,18 @@ async fn main() -> io::Result<()> {
         .parse::<i64>()
         .unwrap_or_else(|_| 10);
 
-    let cleaning_up = Arc::new(Mutex::new(HashMap::new()));
-    let session_state = Arc::new(SessionState {
-        cleaning_up,
+    let session_cleanup = Arc::new(Mutex::new(HashMap::new()));
+    let session_state = Arc::new(AppState {
+        window_size,
+        session_cleanup,
         openai_key,
         reduce_method,
+        openai_client,
     });
 
     HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(redis.clone()))
-            .app_data(web::Data::new(AppState {
-                window_size: window_size,
-            }))
-            .app_data(web::Data::new(window_size.clone()))
             .app_data(web::Data::new(session_state.clone()))
             .wrap(middleware::Logger::default())
             .service(get_health)

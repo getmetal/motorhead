@@ -24,6 +24,8 @@ RUN cargo build --release
 
 FROM debian:buster-slim
 
+RUN apt-get update && apt install -y openssl
+
 COPY --from=build /motorhead/target/release/motorhead .
 
 CMD ["./motorhead"]

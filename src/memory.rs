@@ -4,12 +4,12 @@ use std::convert::TryInto;
 use std::sync::Arc;
 use tokio;
 
-use crate::models::{AppState, MemoryMessages, MemoryResponse, SessionState};
+use crate::models::{AppState, MemoryMessages, MemoryResponse};
 
 #[get("/sessions/{session_id}/memory")]
 pub async fn get_memory(
     session_id: web::Path<String>,
-    data: web::Data<AppState>,
+    data: web::Data<Arc<AppState>>,
     redis: web::Data<redis::Client>,
 ) -> actix_web::Result<impl Responder> {
     let mut conn = redis
@@ -43,8 +43,7 @@ pub async fn get_memory(
 pub async fn post_memory(
     session_id: web::Path<String>,
     web::Json(memory_messages): web::Json<MemoryMessages>,
-    data: web::Data<AppState>,
-    session_state: web::Data<Arc<SessionState>>,
+    data: web::Data<Arc<AppState>>,
     redis: web::Data<redis::Client>,
 ) -> actix_web::Result<impl Responder> {
     let mut conn = redis
@@ -66,15 +65,16 @@ pub async fn post_memory(
     info!("{}", format!("Redis response, {}", res));
 
     if res > data.window_size {
-        let state = session_state.into_inner();
-        let mut cleaning_up = state.cleaning_up.lock().await;
+        let state = data.into_inner();
+        let mut session_cleanup = state.session_cleanup.lock().await;
 
-        if !cleaning_up.get(&*session_id).unwrap_or_else(|| &false) {
+        if !session_cleanup.get(&*session_id).unwrap_or_else(|| &false) {
             info!("Window size bigger!2");
 
-            cleaning_up.insert((&*session_id.to_string()).into(), true);
-            let cleaning_up = Arc::clone(&state.cleaning_up);
+            session_cleanup.insert((&*session_id.to_string()).into(), true);
+            let session_cleanup = Arc::clone(&state.session_cleanup);
             let session_id = session_id.to_string().clone();
+            let state_clone = state.clone();
 
             tokio::spawn(async move {
                 // Summarization
@@ -82,18 +82,18 @@ pub async fn post_memory(
                 // How do we see retrieving information outside of the Chat History.
 
                 info!("Inside job");
-                let half = &data.window_size / 2;
+                let half = state_clone.window_size / 2; // Modify this line
                 let res = redis::Cmd::lrange(
                     &*session_id,
                     half.try_into().unwrap(),
-                    data.window_size.try_into().unwrap(),
+                    state_clone.window_size.try_into().unwrap(), // Modify this line
                 )
                 .query_async::<_, Vec<String>>(&mut conn)
                 .await;
 
                 info!("{:?}", res);
 
-                let mut lock = cleaning_up.lock().await;
+                let mut lock = session_cleanup.lock().await;
                 lock.remove(&session_id);
             });
         }
@@ -112,8 +112,19 @@ pub async fn delete_memory(
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    redis::Cmd::del(&*session_id)
-        .query_async::<_, i64>(&mut conn)
+    // redis::Cmd::del(&*session_id)
+    //     .query_async::<_, i64>(&mut conn)
+    //     .await
+    //     .map_err(error::ErrorInternalServerError)?;
+
+    let context_key = format!("{}_context", &*session_id);
+
+    redis::pipe()
+        .cmd("DEL")
+        .arg(&*session_id)
+        .cmd("DEL")
+        .arg(context_key)
+        .query_async(&mut conn)
         .await
         .map_err(error::ErrorInternalServerError)?;
 

@@ -5,12 +5,10 @@ use tokio::sync::Mutex;
 
 pub struct AppState {
     pub window_size: i64,
-}
-
-pub struct SessionState {
-    pub cleaning_up: Arc<Mutex<HashMap<String, bool>>>,
+    pub session_cleanup: Arc<Mutex<HashMap<String, bool>>>,
     pub openai_key: String,
     pub reduce_method: String,
+    pub openai_client: openai_api::Client,
 }
 
 #[derive(Deserialize)]
