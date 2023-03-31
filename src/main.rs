@@ -17,10 +17,17 @@ async fn main() -> io::Result<()> {
 
     log::info!("starting server");
 
+    let openai_key = env::var("OPENAI_API_KEY").unwrap_or("NOT_SET".to_string());
+    let reduce_method = env::var("WINDOW_REDUCE_METHOD").unwrap_or("buffer".to_string());
+
+    if reduce_method == "summarization" && openai_key == "NOT_SET" {
+        panic!("`OPENAI_API_KEY` is required if `summarization` is the `WINDOW_REDUCE_METHOD`");
+    }
+
     let redis_url = env::var("REDIS_URL").expect("$REDIS_URL is not set");
     let redis = redis::Client::open(redis_url).unwrap();
     let port = env::var("PORT")
-        .unwrap_or_else(|_| String::from("8080"))
+        .unwrap_or_else(|_| "8080".to_string())
         .parse::<u16>()
         .unwrap_or_else(|_| 8080);
 
@@ -30,7 +37,11 @@ async fn main() -> io::Result<()> {
         .unwrap_or_else(|_| 10);
 
     let cleaning_up = Arc::new(Mutex::new(HashMap::new()));
-    let session_state = Arc::new(SessionState { cleaning_up });
+    let session_state = Arc::new(SessionState {
+        cleaning_up,
+        openai_key,
+        reduce_method,
+    });
 
     HttpServer::new(move || {
         App::new()
@@ -46,7 +57,7 @@ async fn main() -> io::Result<()> {
             .service(post_memory)
             .service(delete_memory)
     })
-    .workers(2)
+    // .workers(2)
     .bind(("0.0.0.0", port))?
     .run()
     .await

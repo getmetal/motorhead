@@ -12,6 +12,8 @@ pub struct AppState {
 
 pub struct SessionState {
     pub cleaning_up: Arc<Mutex<HashMap<String, bool>>>,
+    pub openai_key: String,
+    pub reduce_method: String,
 }
 
 #[derive(Deserialize)]
@@ -71,7 +73,7 @@ pub async fn post_memory(
 
     if res > data.window_size {
         let state = session_state.into_inner();
-        let mut cleaning_up = state.cleaning_up.lock().await; // Use lock().await
+        let mut cleaning_up = state.cleaning_up.lock().await;
 
         if !cleaning_up.get(&*session_id).unwrap_or_else(|| &false) {
             info!("Window size bigger!2");
@@ -81,6 +83,10 @@ pub async fn post_memory(
             let session_id = session_id.to_string().clone();
 
             tokio::spawn(async move {
+                // Summarization
+                // Sumarize entire thing?
+                // How do we see retrieving information outside of the Chat History.
+
                 info!("Inside job");
                 let half = &data.window_size / 2;
                 let res = redis::Cmd::lrange(
