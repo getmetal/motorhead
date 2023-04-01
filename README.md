@@ -21,7 +21,7 @@ When building chat applications using LLMs, memory handling is something that  h
 
 - GET|POST|DELETE `/sessions/:id/memory`
 
-A max `window_size` is set for the LLM to keep track of the conversation. Once that max is hit, Motörhead process the `window_size` / 2 messages and summarizes them. Subsequent summaries, as the messages grow, are incremental.
+A max `window_size` is set for the LLM to keep track of the conversation. Once that max is hit, Motörhead will process (`window_size` / 2 messages) and summarize them. Subsequent summaries, as the messages grow, are incremental.
 
 ## Config
 
