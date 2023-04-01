@@ -73,8 +73,8 @@ pub async fn post_memory(
             let state_clone = state.clone();
 
             tokio::spawn(async move {
-                log::info!("Inside job");
                 let half = state_clone.window_size / 2;
+                log::info!("{}", format!("Inside job, {}, {}", half, state_clone.window_size));
                 let context_key = format!("{}_context", &*session_id);
                 let (messages, context): (Vec<String>, Option<String>) = redis::pipe()
                     .cmd("LRANGE")
@@ -100,8 +100,8 @@ pub async fn post_memory(
                 let redis_pipe_response_result: Result<((), ()), redis::RedisError> = redis::pipe()
                     .cmd("LTRIM")
                     .arg(&*session_id)
+                    .arg(0)
                     .arg(TryInto::<i64>::try_into(half).unwrap())
-                    .arg(TryInto::<i64>::try_into(state_clone.window_size).unwrap())
                     .cmd("SET")
                     .arg(context_key)
                     .arg(new_context)

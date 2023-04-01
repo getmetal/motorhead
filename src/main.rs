@@ -19,14 +19,6 @@ async fn main() -> io::Result<()> {
 
     log::info!("Starting Motörhead 🤘");
 
-    let openai_key = env::var("OPENAI_API_KEY").unwrap_or("NOT_SET".to_string());
-    // Right now we've only built `summarization`
-    let reduce_method = env::var("WINDOW_REDUCE_METHOD").unwrap_or("summarization".to_string());
-
-    if reduce_method == "summarization" && openai_key == "NOT_SET" {
-        panic!("`OPENAI_API_KEY` is required if `summarization` is the `WINDOW_REDUCE_METHOD`");
-    }
-
     let openai_client = async_openai::Client::new();
     let redis_url = env::var("REDIS_URL").expect("$REDIS_URL is not set");
     let redis = redis::Client::open(redis_url).unwrap();
@@ -35,7 +27,7 @@ async fn main() -> io::Result<()> {
         .parse::<u16>()
         .unwrap_or_else(|_| 8080);
 
-    let window_size = env::var("WINDOW_SIZE")
+    let window_size = env::var("MAX_WINDOW_SIZE")
         .unwrap_or_else(|_| String::from("10"))
         .parse::<i64>()
         .unwrap_or_else(|_| 15);
@@ -44,7 +36,6 @@ async fn main() -> io::Result<()> {
     let session_state = Arc::new(AppState {
         window_size,
         session_cleanup,
-        reduce_method,
         openai_client,
     });
 
