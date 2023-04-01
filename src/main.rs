@@ -1,104 +1,73 @@
-use actix_web::{error, get, middleware, post, web, App, HttpResponse, HttpServer, Responder};
-use serde::{Deserialize, Serialize};
+use actix_web::{error, middleware, web, App, HttpResponse, HttpServer};
+use std::collections::HashMap;
 use std::env;
 use std::io;
-use std::time::{SystemTime, UNIX_EPOCH};
-use log::info;
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
-
-#[derive(Deserialize)]
-pub struct MemoryMessage {
-    message: String,
-}
-
-#[derive(Deserialize)]
-pub struct MemoryMessages {
-    messages: Vec<MemoryMessage>,
-}
-
-#[derive(Serialize)]
-struct HealthCheckResponse {
-    now: u128,
-}
-
-#[get("/sessions/{session_id}/memory")]
-pub async fn get_memory(
-    session_id: web::Path<String>,
-    redis: web::Data<redis::Client>,
-) -> actix_web::Result<impl Responder> {
-    let mut conn = redis
-        .get_tokio_connection_manager()
-        .await
-        .map_err(error::ErrorInternalServerError)?;
-
-    let res = redis::Cmd::lrange(&*session_id, 0, 10)
-        .query_async::<_, Vec<String>>(&mut conn)
-        .await
-        .map_err(error::ErrorInternalServerError)?;
-
-    Ok(HttpResponse::Ok().json(res))
-}
-
-#[post("/sessions/{session_id}/memory")]
-pub async fn post_memory(
-    session_id: web::Path<String>,
-    web::Json(memory_messages): web::Json<MemoryMessages>,
-    redis: web::Data<redis::Client>,
-) -> actix_web::Result<impl Responder> {
-    let mut conn = redis
-        .get_tokio_connection_manager()
-        .await
-        .map_err(error::ErrorInternalServerError)?;
-
-    let messages: Vec<String> = memory_messages
-        .messages
-        .into_iter()
-        .map(|memory_message| memory_message.message)
-        .collect();
-
-    let res: i64 = redis::Cmd::lpush(&*session_id, messages)
-        .query_async::<_, i64>(&mut conn)
-        .await
-        .map_err(error::ErrorInternalServerError)?;
-
-    info!("{}", format!("Redis response, {}", res));
-
-    Ok(HttpResponse::Ok())
-}
-
-#[get("/")]
-pub async fn healthcheck() -> actix_web::Result<impl Responder> {
-    let ms = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_millis();
-
-    let res = HealthCheckResponse {
-        now: ms,
-    };
-
-    Ok(web::Json(res))
-}
+mod memory;
+mod reducer;
+use memory::{delete_memory, get_memory, post_memory};
+mod models;
+use models::AppState;
+mod healthcheck;
+use healthcheck::get_health;
 
 #[actix_web::main]
 async fn main() -> io::Result<()> {
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
 
-    log::info!("starting HTTP server at http://localhost:8080");
+    log::info!("Starting Motörhead 🤘");
 
+    let openai_key = env::var("OPENAI_API_KEY").unwrap_or("NOT_SET".to_string());
+    // Right now we've only built `summarization`
+    let reduce_method = env::var("WINDOW_REDUCE_METHOD").unwrap_or("summarization".to_string());
+
+    if reduce_method == "summarization" && openai_key == "NOT_SET" {
+        panic!("`OPENAI_API_KEY` is required if `summarization` is the `WINDOW_REDUCE_METHOD`");
+    }
+
+    let openai_client = async_openai::Client::new();
     let redis_url = env::var("REDIS_URL").expect("$REDIS_URL is not set");
     let redis = redis::Client::open(redis_url).unwrap();
+    let port = env::var("PORT")
+        .unwrap_or_else(|_| "8080".to_string())
+        .parse::<u16>()
+        .unwrap_or_else(|_| 8080);
+
+    let window_size = env::var("WINDOW_SIZE")
+        .unwrap_or_else(|_| String::from("10"))
+        .parse::<i64>()
+        .unwrap_or_else(|_| 15);
+
+    let session_cleanup = Arc::new(Mutex::new(HashMap::new()));
+    let session_state = Arc::new(AppState {
+        window_size,
+        session_cleanup,
+        reduce_method,
+        openai_client,
+    });
 
     HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(redis.clone()))
+            .app_data(web::Data::new(session_state.clone()))
             .wrap(middleware::Logger::default())
-            .service(healthcheck)
+            .service(get_health)
             .service(get_memory)
             .service(post_memory)
+            .service(delete_memory)
+            .app_data(web::JsonConfig::default().error_handler(|err, _req| {
+                error::InternalError::from_response(
+                    "",
+                    HttpResponse::BadRequest()
+                        .content_type("application/json")
+                        .body(format!(r#"{{"error":"{}"}}"#, err)),
+                )
+                .into()
+            }))
     })
-    .workers(2)
-    .bind(("0.0.0.0", 8080))?
+    .bind(("0.0.0.0", port))?
     .run()
     .await
 }
