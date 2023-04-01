@@ -15,13 +15,18 @@ Motörhead
 
 Motörhead is memory and information retrival server.
 
+## Why use Motörhead?
+
+When building chat applications using LLMs memory handling is something that is has to be built every time. Motörhead is a server to assist with that process, it provides 3 simple APIS:
+
+- GET|POST|DELETE `/sessions/:id/memory`
+
+A max `window_size` is set to for the LLM to keep track of the conversation. Once that max is hit Motörhead process the `window_size` / 2 messages and summarizes them. Subsequent summaries as the messages grow are incremental.
+
 ## Config
 
-- `WINDOW_SIZE` - Number of max messages returned by the server. When this number is reached a job is triggered to halve it.
-- `WINDOW_REDUCE_METHOD` - `summarization|buffer`
-  - `summarization` - Once the `WINDOW_SIZE` is reached 1/4 of the window is summarized incrementally into the existing session summary.
-  - `buffer`(default) - Memory only goes as far as the `WINDOW_SIZE`. Beyond that no messages are returned.
-- `OPENAI_API_KEY` - Number of max messages returned by the server. When this number is reached a job is triggered to halve it. Required if `summarization` is the `WINDOW_REDUCE_METHOD`.
+- `MAX_WINDOW_SIZE` (default:10) - Number of max messages returned by the server. When this number is reached a job is triggered to halve it.
+- `OPENAI_API_KEY` (required)- Number of max messages returned by the server. When this number is reached a job is triggered to halve it.
 
 ## Examples
 
