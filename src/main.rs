@@ -1,4 +1,4 @@
-use actix_web::{middleware, web, App, HttpServer};
+use actix_web::{error, middleware, web, App, HttpResponse, HttpServer};
 use std::collections::HashMap;
 use std::env;
 use std::io;
@@ -6,6 +6,7 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 
 mod memory;
+mod reducer;
 use memory::{delete_memory, get_memory, post_memory};
 mod models;
 use models::AppState;
@@ -16,16 +17,17 @@ use healthcheck::get_health;
 async fn main() -> io::Result<()> {
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
 
-    log::info!("starting server");
+    log::info!("Starting Motörhead 🤘");
 
     let openai_key = env::var("OPENAI_API_KEY").unwrap_or("NOT_SET".to_string());
-    let reduce_method = env::var("WINDOW_REDUCE_METHOD").unwrap_or("buffer".to_string());
-    let openai_client = openai_api::Client::new(&openai_key);
+    // Right now we've only built `summarization`
+    let reduce_method = env::var("WINDOW_REDUCE_METHOD").unwrap_or("summarization".to_string());
 
     if reduce_method == "summarization" && openai_key == "NOT_SET" {
         panic!("`OPENAI_API_KEY` is required if `summarization` is the `WINDOW_REDUCE_METHOD`");
     }
 
+    let openai_client = async_openai::Client::new();
     let redis_url = env::var("REDIS_URL").expect("$REDIS_URL is not set");
     let redis = redis::Client::open(redis_url).unwrap();
     let port = env::var("PORT")
@@ -36,13 +38,12 @@ async fn main() -> io::Result<()> {
     let window_size = env::var("WINDOW_SIZE")
         .unwrap_or_else(|_| String::from("10"))
         .parse::<i64>()
-        .unwrap_or_else(|_| 10);
+        .unwrap_or_else(|_| 15);
 
     let session_cleanup = Arc::new(Mutex::new(HashMap::new()));
     let session_state = Arc::new(AppState {
         window_size,
         session_cleanup,
-        openai_key,
         reduce_method,
         openai_client,
     });
@@ -56,8 +57,16 @@ async fn main() -> io::Result<()> {
             .service(get_memory)
             .service(post_memory)
             .service(delete_memory)
+            .app_data(web::JsonConfig::default().error_handler(|err, _req| {
+                error::InternalError::from_response(
+                    "",
+                    HttpResponse::BadRequest()
+                        .content_type("application/json")
+                        .body(format!(r#"{{"error":"{}"}}"#, err)),
+                )
+                .into()
+            }))
     })
-    // .workers(2)
     .bind(("0.0.0.0", port))?
     .run()
     .await

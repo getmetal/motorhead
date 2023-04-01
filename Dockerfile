@@ -8,7 +8,7 @@ COPY ./Cargo.toml ./Cargo.toml
 
 # had to add this for open-ssl
 RUN apt-get update -y && \
-  apt-get install -y pkg-config make g++ libssl-dev && \
+  apt-get install -y pkg-config make g++ libssl-dev ca-certificates && \
   rustup target add x86_64-unknown-linux-gnu
 
 # cache dependencies
@@ -24,7 +24,7 @@ RUN cargo build --release
 
 FROM debian:buster-slim
 
-RUN apt-get update && apt install -y openssl
+RUN apt-get update && apt install -y openssl ca-certificates
 
 COPY --from=build /motorhead/target/release/motorhead .
 

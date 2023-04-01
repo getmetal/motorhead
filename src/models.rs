@@ -6,9 +6,8 @@ use tokio::sync::Mutex;
 pub struct AppState {
     pub window_size: i64,
     pub session_cleanup: Arc<Mutex<HashMap<String, bool>>>,
-    pub openai_key: String,
     pub reduce_method: String,
-    pub openai_client: openai_api::Client,
+    pub openai_client: async_openai::Client,
 }
 
 #[derive(Deserialize)]
@@ -30,4 +29,9 @@ pub struct MemoryResponse {
 #[derive(Serialize)]
 pub struct HealthCheckResponse {
     pub now: u128,
+}
+
+#[derive(Serialize)]
+pub struct AckResponse {
+    pub status: &'static str,
 }
