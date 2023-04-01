@@ -6,7 +6,6 @@ use tokio::sync::Mutex;
 pub struct AppState {
     pub window_size: i64,
     pub session_cleanup: Arc<Mutex<HashMap<String, bool>>>,
-    pub reduce_method: String,
     pub openai_client: async_openai::Client,
 }
 
