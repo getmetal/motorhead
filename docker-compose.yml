@@ -10,8 +10,8 @@ services:
       PORT: 8080
       REDIS_URL: 'redis://redis:6379'
       WINDOW_REDUCE_METHOD: 'buffer'
-      OPENAI_API_KEY: <OPENAI_API_KEY>
-      RUST_BACKTRACE: 1
+    env_file:
+      - .env
   redis:
     image: redis:latest
     ports:

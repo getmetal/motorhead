@@ -10,4 +10,6 @@ Motörhead is memory and information retrival server.
     - `buffer`(default) - Memory only goes as far as the `WINDOW_SIZE`. Beyond that no messages are returned.
 - `OPENAI_API_KEY` - Number of max messages returned by the server. When this number is reached a job is triggered to halve it. Required if `summarization` is the `WINDOW_REDUCE_METHOD`.
 
-## Architecture
+## Examples
+
+- Check out our [Chat JS Example](examples/chat-js/)
