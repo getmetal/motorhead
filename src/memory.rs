@@ -69,12 +69,11 @@ pub async fn post_memory(
         if !session_cleanup.get(&*session_id).unwrap_or_else(|| &false) {
             session_cleanup.insert((&*session_id.to_string()).into(), true);
             let session_cleanup = Arc::clone(&state.session_cleanup);
-            let session_id = session_id.to_string().clone();
+            let session_id = session_id.to_string();
             let state_clone = state.clone();
 
             tokio::spawn(async move {
                 let half = state_clone.window_size / 2;
-                log::info!("{}", format!("Inside job, {}, {}", half, state_clone.window_size));
                 let context_key = format!("{}_context", &*session_id);
                 let (messages, context): (Vec<String>, Option<String>) = redis::pipe()
                     .cmd("LRANGE")

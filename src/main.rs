@@ -23,14 +23,14 @@ async fn main() -> io::Result<()> {
     let redis_url = env::var("REDIS_URL").expect("$REDIS_URL is not set");
     let redis = redis::Client::open(redis_url).unwrap();
     let port = env::var("PORT")
-        .unwrap_or_else(|_| "8080".to_string())
-        .parse::<u16>()
-        .unwrap_or_else(|_| 8080);
+        .ok()
+        .and_then(|s| s.parse::<u16>().ok())
+        .unwrap_or_else(|| 8000);
 
     let window_size = env::var("MAX_WINDOW_SIZE")
-        .unwrap_or_else(|_| String::from("10"))
-        .parse::<i64>()
-        .unwrap_or_else(|_| 15);
+        .ok()
+        .and_then(|s| s.parse::<i64>().ok())
+        .unwrap_or_else(|| 15);
 
     let session_cleanup = Arc::new(Mutex::new(HashMap::new()));
     let session_state = Arc::new(AppState {
