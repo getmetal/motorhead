@@ -21,8 +21,6 @@ async fn main() -> io::Result<()> {
 
     let openai_client = async_openai::Client::new();
     let redis_url = env::var("REDIS_URL").expect("$REDIS_URL is not set");
-    // let openai_api_key = env::var("OPENAI_API_KEY").expect("$OPENAI_API_KEY is not set");
-    // log::info!("{}", openai_api_key);
     let redis = redis::Client::open(redis_url).unwrap();
     let port = env::var("PORT")
         .ok()
