@@ -21,6 +21,8 @@ async fn main() -> io::Result<()> {
 
     let openai_client = async_openai::Client::new();
     let redis_url = env::var("REDIS_URL").expect("$REDIS_URL is not set");
+    // let openai_api_key = env::var("OPENAI_API_KEY").expect("$OPENAI_API_KEY is not set");
+    // log::info!("{}", openai_api_key);
     let redis = redis::Client::open(redis_url).unwrap();
     let port = env::var("PORT")
         .ok()
@@ -30,7 +32,7 @@ async fn main() -> io::Result<()> {
     let window_size = env::var("MAX_WINDOW_SIZE")
         .ok()
         .and_then(|s| s.parse::<i64>().ok())
-        .unwrap_or_else(|| 15);
+        .unwrap_or_else(|| 12);
 
     let session_cleanup = Arc::new(Mutex::new(HashMap::new()));
     let session_state = Arc::new(AppState {
