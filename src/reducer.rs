@@ -61,8 +61,6 @@ pub async fn incremental_summarization(
         .content
         .clone();
 
-    log::info!("{}", completion);
-
     Ok(completion.to_string())
 }
 
@@ -82,8 +80,6 @@ pub async fn handle_compaction(
         .arg(context_key.clone())
         .query_async(&mut conn)
         .await?;
-
-    log::info!("{:?}", context);
 
     let new_context_result =
         incremental_summarization(state_clone.openai_client.clone(), context, messages).await;

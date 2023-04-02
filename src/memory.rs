@@ -61,19 +61,17 @@ pub async fn post_memory(
         .map_err(error::ErrorInternalServerError)?;
 
     if res > data.window_size {
-        log::info!("inside first if");
         let state = data.into_inner();
         let mut session_cleanup = state.session_cleanup.lock().await;
 
         if !session_cleanup.get(&*session_id).unwrap_or_else(|| &false) {
-            log::info!("inside second if");
             session_cleanup.insert((&*session_id.to_string()).into(), true);
             let session_cleanup = Arc::clone(&state.session_cleanup);
             let session_id = session_id.clone();
             let state_clone = Arc::clone(&state);
 
             tokio::spawn(async move {
-                log::info!("running JOB");
+                log::info!("running compact");
                 let _compaction_result =
                     handle_compaction(session_id.to_string(), state_clone, conn).await;
 
