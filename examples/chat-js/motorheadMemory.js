@@ -33,11 +33,10 @@ export default class MotorheadMemory extends BaseChatMemory {
     const { messages = [], context = "NONE" } = await res.json();
 
     messages.forEach((message) => {
-      const isAIMessage = message.startsWith("AI:");
-      if (isAIMessage) {
-        this.chatHistory.addAIChatMessage(message.substring(3));
+      if (message.role == 'AI') {
+        this.chatHistory.addAIChatMessage(message.content);
       } else {
-        this.chatHistory.addUserMessage(message.substring(5));
+        this.chatHistory.addUserMessage(message.content);
       }
     });
 
@@ -58,8 +57,8 @@ export default class MotorheadMemory extends BaseChatMemory {
       method: "POST",
       body: JSON.stringify({
         messages: [
-          { message: `Human: ${inputValues.input}` },
-          { message: `AI: ${outputValues.response}` },
+          { role: 'Human', content: `${inputValues.input}` },
+          { role: 'AI', content: `${outputValues.response}` },
         ],
       }),
       headers: {

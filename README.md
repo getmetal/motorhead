@@ -23,15 +23,36 @@ When building chat applications using LLMs, memory handling is something that  h
 ```json
 {
     "messages": [
-        "AI: Motörhead had many members over the years, but some of the most notable ones include:\n\n- Phil \"Philthy Animal\" Taylor: drummer from 1975-1984 and 1987-1992\n- \"Fast\" Eddie Clarke: guitarist from 1976-1982\n- Brian \"Robbo\" Robertson: guitarist from 1982-1983\n- Würzel: guitarist from 1984-1995\n- Mikkey Dee: drummer from 1992-2015\n\nThese are just a few of the many musicians who played with Motörhead over the years. However, Lemmy Kilmister was the only member who was with the band from its inception until his death in 2015.",
-        "Human: What are the other members names?",
-        "AI: Motörhead was formed in London, England in 1975. The band was founded by bassist and vocalist Ian \"Lemmy\" Kilmister, who had previously played with the space rock band Hawkwind. The original lineup of Motörhead also included guitarist Larry Wallis and drummer Lucas Fox. Over the years, the band's lineup changed several times, with Lemmy being the only constant member. Despite their English origins, Motörhead became a global phenomenon, with a dedicated fanbase around the world.",
-        "Human: Where is Motörhead from? ",
-        "AI: Motörhead had several popular songs throughout their career, but their biggest hit was likely \"Ace of Spades\". The song was released in 1980 and quickly became a fan favorite, thanks to its fast-paced, hard-hitting sound and catchy chorus. \"Ace of Spades\" is often cited as one of the greatest heavy metal songs of all time and has been covered by numerous other artists over the years. Other popular songs by Motörhead include \"Overkill\", \"Bomber\", \"Iron Fist\", and \"Killed by Death\".",
-        "Human: What was Motörhead's biggest song?",
-        "AI: The lead singer of Motörhead was Lemmy Kilmister. He was also the bassist and primary songwriter for the band. Lemmy was known for his distinctive gravelly voice, his aggressive bass playing style, and his iconic handlebar mustache. He passed away in 2015 at the age of 70, but his legacy as a rock and roll icon lives on."
+        {
+            "role": "AI",
+            "content": "Electronic music and salsa are two very different genres of music, and the way people dance to them is also quite different.\n\nSalsa is a Latin dance style that originated in the Caribbean and is characterized by its lively, syncopated rhythm and intricate footwork. Salsa dancing often involves partners dancing in close proximity, with a lot of hip and body movement. The dance is often very sensual and requires a lot of coordination between partners.\n\nElectronic music, on the other hand, is often associated with more free-form, individualistic dancing. While there are certainly partner dances that can be done to electronic music, such as the \"shuffle\" or \"jacking\" styles, many people prefer to dance on their own and let the music guide their movements. Electronic music is often characterized by a strong, steady beat that can be danced to in a variety of ways, from energetic jumping and bouncing to more fluid, flowing movements.\n\nIn summary, while both salsa and electronic music can be great for dancing, they are very different styles of music with different dance styles and techniques."
+        },
+        {
+            "role": "Human",
+            "content": "how does it compare to salsa?"
+        },
+        {
+            "role": "AI",
+            "content": "Electronic music is a broad genre that encompasses many different styles, so there is no one \"right\" way to dance to it. However, there are some general tips that can help you get started:\n\n1. Feel the beat: Electronic music is often characterized by a strong, steady beat. Try to feel the rhythm of the music and let it guide your movements.\n\n2. Move your body: Electronic music is often associated with energetic, full-body movements. Don't be afraid to let loose and move your arms, legs, and hips.\n\n3. Experiment with different styles: Depending on the style of electronic music you're listening to, there may be different dance styles that are associated with it. For example, techno and house music are often associated with \"rave\" or \"club\" dancing, while breakbeat and drum and bass are often associated with more athletic, breakdancing-style movements.\n\n4. Watch others: If you're new to electronic music, it can be helpful to watch others dance to get a sense of the style and rhythm. You can also find many tutorials and instructional videos online that can help you learn specific dance moves.\n\nRemember, the most important thing is to have fun and let the music move you!"
+        },
+        {
+            "role": "Human",
+            "content": "how do you dance electronic music?"
+        },
+        {
+            "role": "AI",
+            "content": "Colombia has a vibrant electronic music scene, and there are many talented DJs and producers who have gained international recognition. Here are a few famous DJs from Colombia:\n\n1. Erick Morillo: Born in New York City to Colombian parents, Erick Morillo is a DJ and producer who has had a long and successful career in the electronic music industry. He is best known for his house music tracks and has won several awards for his work.\n\n2. Kali Uchis: Although not strictly a DJ, Kali Uchis is a Colombian-American singer and songwriter who has gained a large following for her unique blend of R&B, soul, and pop music. She has collaborated with many famous musicians, including Tyler, The Creator and Gorillaz.\n\n3. DJ Fresh: DJ Fresh is a Colombian DJ and producer who is known for his work in the drum and bass genre. He has released several albums and has won numerous awards for his music.\n\n4. Mario Ochoa: Mario Ochoa is a DJ and producer from Medellín, Colombia, who is known for his techno and tech-house tracks. He has released music on many famous labels, including Toolroom and 100% Pure.\n\nThese are just a few examples of the many talented DJs and producers from Colombia."
+        },
+        {
+            "role": "Human",
+            "content": "What are some famous djs from Colombia?"
+        },
+        {
+            "role": "AI",
+            "content": "Baum opened its doors in 2014 and has quickly become one of the most popular clubs for electronic music in Bogotá. It is known for its impressive sound system and its focus on underground techno and house music.\n\nVideo Club, on the other hand, has been around for much longer. It first opened in 1999 and has since become an institution in the Bogotá nightlife scene. It is known for its eclectic music selection, which includes everything from electronic music to rock and pop. Over the years, Video Club has hosted many famous DJs and musicians, including Daft Punk, Chemical Brothers, and LCD Soundsystem."
+        }
     ],
-    "context": "The human inquires about cool neighborhoods and the AI lists several examples from around the world. The conversation then transitions to discussing the increasingly popular neighborhood of Williamsburg in Brooklyn, which has a trendy and hipster vibe. The AI also mentions similar neighborhoods in Paris. The conversation then abruptly changes as the human asks who the lead singer of Motörhead was. The AI answers with information about Lemmy Kilmister, the bassist and primary songwriter for the band. The human then asks about famous techno clubs in Berlin, and the AI lists several examples with unique atmospheres and cutting-edge music. The AI explains that techno originated in Detroit in the mid-1980s and quickly gained popularity as a symbol of freedom and unity. The genre has since spread globally and continues to evolve and innovate in new sub-genres and styles."
+    "context": "The conversation covers topics such as clubs for electronic music in Bogotá, popular tourist attractions in the city, and general information about Colombia. The AI provides information about popular electronic music clubs such as Baum and Video Club, as well as electronic music festivals that take place in Bogotá. The AI also recommends tourist attractions such as La Candelaria, Monserrate and the Salt Cathedral of Zipaquirá, and provides general information about Colombia's diverse culture, landscape and wildlife."
 }
 ```
 
@@ -41,7 +62,7 @@ When building chat applications using LLMs, memory handling is something that  h
 curl --location 'localhost:8080/sessions/${SESSION_ID}/memory' \
 --header 'Content-Type: application/json' \
 --data '{
-    "messages": [{ "message": "Human: ping" }, { "message": "AI: pong" }]
+    "messages": [{ "role": "Human", "content": "ping" }, { "role": "AI", "content": "pong" }]
 }'
 ```
 - DELETE `/sessions/:id/memory` - deletes the session's message list.
