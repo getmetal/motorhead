@@ -2,7 +2,7 @@ use actix_web::{delete, error, get, post, web, HttpResponse, Responder};
 use std::sync::Arc;
 use tokio;
 
-use crate::models::{AckResponse, AppState, MemoryMessages, MemoryResponse};
+use crate::models::{AckResponse, AppState, MemoryMessage, MemoryMessages, MemoryResponse};
 use crate::reducer::handle_compaction;
 
 #[get("/sessions/{session_id}/memory")]
@@ -30,6 +30,20 @@ pub async fn get_memory(
         .await
         .map_err(error::ErrorInternalServerError)?;
 
+    let messages: Vec<MemoryMessage> = messages
+        .into_iter()
+        .filter_map(|message| {
+            let mut parts = message.splitn(2, ": ");
+            match (parts.next(), parts.next()) {
+                (Some(role), Some(content)) => Some(MemoryMessage {
+                    role: role.to_string(),
+                    content: content.to_string(),
+                }),
+                _ => None,
+            }
+        })
+        .collect();
+
     let response = MemoryResponse { messages, context };
 
     Ok(HttpResponse::Ok()
@@ -52,7 +66,7 @@ pub async fn post_memory(
     let messages: Vec<String> = memory_messages
         .messages
         .into_iter()
-        .map(|memory_message| memory_message.message)
+        .map(|memory_message| format!("{}: {}", memory_message.role, memory_message.content))
         .collect();
 
     let res: i64 = redis::Cmd::lpush(&*session_id, messages)

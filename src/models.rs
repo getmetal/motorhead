@@ -10,9 +10,10 @@ pub struct AppState {
     pub openai_client: async_openai::Client,
 }
 
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct MemoryMessage {
-    pub message: String,
+    pub role: String,
+    pub content: String,
 }
 
 #[derive(Deserialize)]
@@ -22,7 +23,7 @@ pub struct MemoryMessages {
 
 #[derive(Serialize)]
 pub struct MemoryResponse {
-    pub messages: Vec<String>,
+    pub messages: Vec<MemoryMessage>,
     pub context: Option<String>,
 }
 
