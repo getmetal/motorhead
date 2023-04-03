@@ -12,20 +12,20 @@ pub async fn incremental_summarization(
     messages: Vec<String>,
 ) -> Result<String, Box<dyn Error + Send + Sync>> {
     let messages_joined = messages.join("\n");
-    // Taken from Langchain
     let prev_summary = context.as_deref().unwrap_or_default();
+    // Taken from langchain
     let progresive_prompt = format!(
         r#"
         Progressively summarize the lines of conversation provided, adding onto the previous summary returning a new summary. If the lines are meaningless just return NONE
 
         EXAMPLE
         Current summary:
-        The human asks what the AI thinks of artificial intelligence. The AI thinks artificial intelligence is a force for good.
+        The human asks who is the lead singer of Motörhead. The AI responds Lemmy Kilmister.
         New lines of conversation:
-        Human: Why do you think artificial intelligence is a force for good?
-        AI: Because artificial intelligence will help humans reach their full potential.
+        Human: What are the other members of Motörhead?
+        AI: The original members included Lemmy Kilmister (vocals, bass), Larry Wallis (guitar), and Lucas Fox (drums), with notable members throughout the years including \"Fast\" Eddie Clarke (guitar), Phil \"Philthy Animal\" Taylor (drums), and Mikkey Dee (drums).
         New summary:
-        The human asks what the AI thinks of artificial intelligence. The AI thinks artificial intelligence is a force for good because it will help humans reach their full potential.
+        The human asks who is the lead singer and other members of Motörhead. The AI responds Lemmy Kilmister is the lead singer and other original members include Larry Wallis, and Lucas Fox, with notable past members including \"Fast\" Eddie Clarke, Phil \"Philthy Animal\" Taylor, and Mikkey Dee.
         END OF EXAMPLE
 
         Current summary:
