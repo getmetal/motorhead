@@ -53,6 +53,15 @@ A max `window_size` is set for the LLM to keep track of the conversation. Once t
 - `MAX_WINDOW_SIZE` (default:10) - Number of max messages returned by the server. When this number is reached, a job is triggered to halve it.
 - `OPENAI_API_KEY` (required)- Number of max messages returned by the server. When this number is reached, a job is triggered to halve it.
 
+## How to run
+
+With Docker:
+```bash
+
+docker-compose build && docker-compose up
+
+```
+
 ## Examples
 
 - Check out our [Chat JS Example](examples/chat-js/)
