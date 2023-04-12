@@ -8,7 +8,9 @@ use tokio::sync::Mutex;
 mod long_term_memory;
 mod memory;
 mod reducer;
+mod retrieval;
 use memory::{delete_memory, get_memory, post_memory};
+use retrieval::run_retrieval;
 mod models;
 use models::AppState;
 mod healthcheck;
@@ -59,6 +61,7 @@ async fn main() -> io::Result<()> {
             .service(get_memory)
             .service(post_memory)
             .service(delete_memory)
+            .service(run_retrieval)
             .app_data(web::JsonConfig::default().error_handler(|err, _req| {
                 error::InternalError::from_response(
                     "",

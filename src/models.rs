@@ -41,6 +41,11 @@ pub struct AckResponse {
     pub status: &'static str,
 }
 
+#[derive(Deserialize)]
+pub struct SearchInput {
+    pub text: String,
+}
+
 #[derive(Debug)]
 pub enum MotorheadError {
     RedisError(RedisError),

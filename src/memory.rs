@@ -2,7 +2,7 @@ use actix_web::{delete, error, get, post, web, HttpResponse, Responder};
 use std::sync::Arc;
 use tokio;
 
-use crate::long_term_memory::{index, search};
+use crate::long_term_memory::index;
 use crate::models::{AckResponse, AppState, MemoryMessage, MemoryMessages, MemoryResponse};
 use crate::reducer::handle_compaction;
 
