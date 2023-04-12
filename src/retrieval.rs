@@ -1,9 +1,9 @@
 use crate::long_term_memory::search;
 use crate::models::{AppState, SearchInput};
-use actix_web::{web, post, HttpResponse, Responder};
+use actix_web::{post, web, HttpResponse, Responder};
 use std::sync::Arc;
 
-#[post("/sessions/{session_id}/search")]
+#[post("/sessions/{session_id}/retrieval")]
 pub async fn run_retrieval(
     web::Json(payload): web::Json<SearchInput>,
     data: web::Data<Arc<AppState>>,
