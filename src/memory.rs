@@ -82,7 +82,7 @@ pub async fn post_memory(
         let message = message.clone();
         tokio::task::spawn(async move {
             if let Err(e) = index(api_key, client_id, app_id, message).await {
-                log::error!("Error calling API: {:?}", e);
+                log::error!("Error calling index API: {:?}", e);
             }
         });
     }

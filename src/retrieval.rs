@@ -15,7 +15,7 @@ pub async fn run_retrieval(
     match search(payload.text, app_id, api_key, client_id).await {
         Ok(results) => HttpResponse::Ok().json(results),
         Err(e) => {
-            log::error!("Error calling API: {:?}", e);
+            log::error!("Error Retrieval API: {:?}", e);
             HttpResponse::InternalServerError().body("Internal server error")
         }
     }
