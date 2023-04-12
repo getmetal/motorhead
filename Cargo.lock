@@ -87,6 +87,7 @@ version = "2.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "15265b6b8e2347670eb363c47fc8c75208b4a4994b27192f345fcbe707804f3e"
 dependencies = [
+ "actix-macros",
  "futures-core",
  "tokio",
 ]
@@ -1088,6 +1089,7 @@ dependencies = [
 name = "motorhead"
 version = "0.1.0"
 dependencies = [
+ "actix-rt",
  "actix-web",
  "async-openai",
  "env_logger",

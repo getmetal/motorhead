@@ -17,3 +17,4 @@ redis = { version = "0.22", default-features = false, features = ["tokio-comp", 
 serde = { version = "1", features = ["derive"] }
 tokio = { version = "1", features = ["full"] }
 reqwest = { version = "0.11", features = ["json"] }
+actix-rt = "2.8.0"
