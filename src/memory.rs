@@ -2,6 +2,7 @@ use actix_web::{delete, error, get, post, web, HttpResponse, Responder};
 use std::sync::Arc;
 use tokio;
 
+use crate::long_term_memory::{index, search};
 use crate::models::{AckResponse, AppState, MemoryMessage, MemoryMessages, MemoryResponse};
 use crate::reducer::handle_compaction;
 
@@ -69,10 +70,22 @@ pub async fn post_memory(
         .map(|memory_message| format!("{}: {}", memory_message.role, memory_message.content))
         .collect();
 
-    let res: i64 = redis::Cmd::lpush(&*session_id, messages)
+    let res: i64 = redis::Cmd::lpush(&*session_id, messages.clone())
         .query_async::<_, i64>(&mut conn)
         .await
         .map_err(error::ErrorInternalServerError)?;
+
+    for message in &messages {
+        let api_key = data.metal_secret.clone();
+        let client_id = data.metal_client_id.clone();
+        let app_id = data.metal_app_id.clone();
+        let message = message.clone();
+        tokio::task::spawn(async move {
+            if let Err(e) = index(api_key, client_id, app_id, message).await {
+                log::error!("Error calling API: {:?}", e);
+            }
+        });
+    }
 
     if res > data.window_size {
         let state = data.into_inner();

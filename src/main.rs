@@ -5,6 +5,7 @@ use std::io;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
+mod long_term_memory;
 mod memory;
 mod reducer;
 use memory::{delete_memory, get_memory, post_memory};
@@ -32,11 +33,21 @@ async fn main() -> io::Result<()> {
         .and_then(|s| s.parse::<i64>().ok())
         .unwrap_or_else(|| 12);
 
+    let metal_secret = env::var("METAL_SECRET_KEY").unwrap_or("".to_string());
+    let metal_client_id = env::var("METAL_CLIENT_ID").unwrap_or("".to_string());
+    let metal_app_id = env::var("METAL_APP_ID").unwrap_or("".to_string());
+    let metal_enabled =
+        !metal_secret.is_empty() && !metal_client_id.is_empty() && !metal_app_id.is_empty();
+
     let session_cleanup = Arc::new(Mutex::new(HashMap::new()));
     let session_state = Arc::new(AppState {
         window_size,
         session_cleanup,
         openai_client,
+        metal_secret,
+        metal_client_id,
+        metal_app_id,
+        metal_enabled,
     });
 
     HttpServer::new(move || {

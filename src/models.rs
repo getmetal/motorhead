@@ -8,6 +8,10 @@ pub struct AppState {
     pub window_size: i64,
     pub session_cleanup: Arc<Mutex<HashMap<String, bool>>>,
     pub openai_client: async_openai::Client,
+    pub metal_enabled: bool,
+    pub metal_secret: String,
+    pub metal_client_id: String,
+    pub metal_app_id: String,
 }
 
 #[derive(Serialize, Deserialize)]
