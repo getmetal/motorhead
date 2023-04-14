@@ -22,12 +22,12 @@ async fn main() -> io::Result<()> {
     let openai_client = async_openai::Client::new();
     let redis_url = env::var("REDIS_URL").expect("$REDIS_URL is not set");
     let redis = redis::Client::open(redis_url).unwrap();
-    let port = env::var("PORT")
+    let port = env::var("MOTORHEAD_PORT")
         .ok()
         .and_then(|s| s.parse::<u16>().ok())
         .unwrap_or_else(|| 8000);
 
-    let window_size = env::var("MAX_WINDOW_SIZE")
+    let window_size = env::var("MOTORHEAD_MAX_WINDOW_SIZE")
         .ok()
         .and_then(|s| s.parse::<i64>().ok())
         .unwrap_or_else(|| 12);

@@ -71,7 +71,8 @@ A max `window_size` is set for the LLM to keep track of the conversation. Once t
 
 ## Config
 
-- `MAX_WINDOW_SIZE` (default:10) - Number of max messages returned by the server. When this number is reached, a job is triggered to halve it.
+- `MOTORHEAD_MAX_WINDOW_SIZE` (default:12) - Number of max messages returned by the server. When this number is reached, a job is triggered to halve it.
+- `MOTORHEAD_PORT` (default:8000) - Motörhead Server Port
 - `OPENAI_API_KEY` (required)- Number of max messages returned by the server. When this number is reached, a job is triggered to halve it.
 
 ## How to run

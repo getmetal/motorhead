@@ -7,7 +7,7 @@ services:
     links:
       - redis
     environment:
-      PORT: 8080
+      MOTORHEAD_PORT: 8080
       REDIS_URL: 'redis://redis:6379'
     env_file:
       - .env
