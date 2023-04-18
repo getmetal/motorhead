@@ -5,12 +5,13 @@ use async_openai::{
 };
 use std::error::Error;
 use std::sync::Arc;
+use tiktoken_rs::p50k_base;
 
 pub async fn incremental_summarization(
     openai_client: Client,
     context: Option<String>,
     mut messages: Vec<String>,
-) -> Result<String, Box<dyn Error + Send + Sync>> {
+) -> Result<(String, usize), Box<dyn Error + Send + Sync>> {
     messages.reverse();
     let messages_joined = messages.join("\n");
     let prev_summary = context.as_deref().unwrap_or_default();
@@ -37,6 +38,9 @@ pub async fn incremental_summarization(
         "#
     );
 
+    let bpe = p50k_base().unwrap();
+    let tokens_used = bpe.encode_with_special_tokens(&progresive_prompt);
+
     let request = CreateChatCompletionRequestArgs::default()
         .max_tokens(512u16)
         .model("gpt-3.5-turbo")
@@ -62,7 +66,7 @@ pub async fn incremental_summarization(
         .content
         .clone();
 
-    Ok(completion.to_string())
+    Ok((completion.to_string(), tokens_used.len()))
 }
 
 pub async fn handle_compaction(
@@ -92,9 +96,10 @@ pub async fn handle_compaction(
         ));
     }
 
-    let new_context = new_context_result.unwrap_or_default();
+    let (new_context, tokens_used) = new_context_result.unwrap_or_default();
 
-    let redis_pipe_response_result: Result<((), ()), redis::RedisError> = redis::pipe()
+    let token_count_key = format!("{}_tokens", &*session_id);
+    let redis_pipe_response_result: Result<((), (), i64), redis::RedisError> = redis::pipe()
         .cmd("LTRIM")
         .arg(&*session_id)
         .arg(0)
@@ -102,6 +107,9 @@ pub async fn handle_compaction(
         .cmd("SET")
         .arg(context_key)
         .arg(new_context)
+        .cmd("INCRBY")
+        .arg(token_count_key)
+        .arg(tokens_used)
         .query_async(&mut conn)
         .await;
 

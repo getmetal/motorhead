@@ -54,7 +54,8 @@ When building chat applications using LLMs, memory handling is something that  h
             "content": "Baum opened its doors in 2014 and has quickly become one of the most popular clubs for electronic music in Bogotá."
         }
     ],
-    "context": "The conversation covers topics such as clubs for electronic music in Bogotá, popular tourist attractions in the city, and general information about Colombia. The AI provides information about popular electronic music clubs such as Baum and Video Club, as well as electronic music festivals that take place in Bogotá. The AI also recommends tourist attractions such as La Candelaria, Monserrate and the Salt Cathedral of Zipaquirá, and provides general information about Colombia's diverse culture, landscape and wildlife."
+    "context": "The conversation covers topics such as clubs for electronic music in Bogotá, popular tourist attractions in the city, and general information about Colombia. The AI provides information about popular electronic music clubs such as Baum and Video Club, as well as electronic music festivals that take place in Bogotá. The AI also recommends tourist attractions such as La Candelaria, Monserrate and the Salt Cathedral of Zipaquirá, and provides general information about Colombia's diverse culture, landscape and wildlife.",
+    "tokens": 744 // tokens used for incremental summarization
 }
 ```
 
