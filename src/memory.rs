@@ -20,17 +20,27 @@ pub async fn get_memory(
 
     let lrange_key = &*session_id;
     let context_key = format!("{}_context", &*session_id);
+    let token_count_key = format!("{}_tokens", &*session_id);
+    let keys = vec![context_key, token_count_key];
 
-    let (messages, context): (Vec<String>, Option<String>) = redis::pipe()
+    let (messages, values): (Vec<String>, Vec<Option<String>>) = redis::pipe()
         .cmd("LRANGE")
         .arg(lrange_key)
         .arg(0)
         .arg(data.window_size as isize)
-        .cmd("GET")
-        .arg(context_key)
+        .cmd("MGET")
+        .arg(keys)
         .query_async(&mut conn)
         .await
         .map_err(error::ErrorInternalServerError)?;
+
+    let context = values.get(0).cloned().flatten();
+    let tokens = values
+        .get(1)
+        .cloned()
+        .flatten()
+        .and_then(|tokens_string| tokens_string.parse::<i64>().ok())
+        .unwrap_or(0);
 
     let messages: Vec<MemoryMessage> = messages
         .into_iter()
@@ -46,7 +56,11 @@ pub async fn get_memory(
         })
         .collect();
 
-    let response = MemoryResponse { messages, context };
+    let response = MemoryResponse {
+        messages,
+        context,
+        tokens: Some(tokens),
+    };
 
     Ok(HttpResponse::Ok()
         .content_type("application/json")
@@ -121,12 +135,11 @@ pub async fn delete_memory(
         .map_err(error::ErrorInternalServerError)?;
 
     let context_key = format!("{}_context", &*session_id);
+    let token_count_key = format!("{}_tokens", &*session_id);
+    let session_key = format!("{}", &*session_id);
+    let keys = vec![context_key, session_key, token_count_key];
 
-    redis::pipe()
-        .cmd("DEL")
-        .arg(&*session_id)
-        .cmd("DEL")
-        .arg(context_key)
+    redis::Cmd::del(keys)
         .query_async(&mut conn)
         .await
         .map_err(error::ErrorInternalServerError)?;

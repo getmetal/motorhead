@@ -26,6 +26,7 @@ pub struct MemoryMessagesAndContext {
 pub struct MemoryResponse {
     pub messages: Vec<MemoryMessage>,
     pub context: Option<String>,
+    pub tokens: Option<i64>,
 }
 
 #[derive(Serialize)]
