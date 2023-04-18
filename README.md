@@ -79,7 +79,7 @@ A max `window_size` is set for the LLM to keep track of the conversation. Once t
 
 - `MOTORHEAD_MAX_WINDOW_SIZE` (default:12) - Number of max messages returned by the server. When this number is reached, a job is triggered to halve it.
 - `MOTORHEAD_PORT` (default:8000) - Motörhead Server Port
-- `OPENAI_API_KEY` (required)- Number of max messages returned by the server. When this number is reached, a job is triggered to halve it.
+- `OPENAI_API_KEY` (required)- [Your api key](https://platform.openai.com/account/api-keys) to connect to OpenAI.
 - `REDIS_URL` (required)- URL used to connect to `redis`.
 
 ## How to run
