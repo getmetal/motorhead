@@ -5,14 +5,15 @@ dotenv.config()
 import chalk from "chalk";
 import { CallbackManager } from "langchain/callbacks";
 import { ConversationChain } from "langchain/chains";
-import { ChatOpenAI } from "langchain/chat_models";
+import { ChatOpenAI } from "langchain/chat_models/openai";
 import {
   ChatPromptTemplate,
   HumanMessagePromptTemplate,
   SystemMessagePromptTemplate,
   MessagesPlaceholder,
 } from "langchain/prompts";
-import MotorheadMemory from "./motorheadMemory.js";
+// import MotorheadMemory from "./motorheadMemory.js";
+import { MotorheadMemory } from "langchain/memory";
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -34,6 +35,7 @@ export const run = async () => {
     returnMessages: true,
     memoryKey: "history",
     sessionId: "ozzy-666",
+    motorheadURL: "http://localhost:8080"
   });
   await memory.init(); // loads previous state from Motörhead 🤘
   let context = "";
