@@ -17,8 +17,9 @@ pub struct MemoryMessage {
 }
 
 #[derive(Deserialize)]
-pub struct MemoryMessages {
+pub struct MemoryMessagesAndContext {
     pub messages: Vec<MemoryMessage>,
+    pub context: Option<String>,
 }
 
 #[derive(Serialize)]
