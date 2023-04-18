@@ -9,8 +9,9 @@ use std::sync::Arc;
 pub async fn incremental_summarization(
     openai_client: Client,
     context: Option<String>,
-    messages: Vec<String>,
+    mut messages: Vec<String>,
 ) -> Result<String, Box<dyn Error + Send + Sync>> {
+    messages.reverse();
     let messages_joined = messages.join("\n");
     let prev_summary = context.as_deref().unwrap_or_default();
     // Taken from langchain
