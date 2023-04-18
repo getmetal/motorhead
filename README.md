@@ -65,6 +65,9 @@ curl --location 'localhost:8080/sessions/${SESSION_ID}/memory' \
     "messages": [{ "role": "Human", "content": "ping" }, { "role": "AI", "content": "pong" }]
 }'
 ```
+
+Optionally, `context` can be send in if it needs to get loaded from another datastore.
+
 - DELETE `/sessions/:id/memory` - deletes the session's message list.
 
 A max `window_size` is set for the LLM to keep track of the conversation. Once that max is hit, Motörhead will process (`window_size  / 2` messages) and summarize them. Subsequent summaries, as the messages grow, are incremental.
