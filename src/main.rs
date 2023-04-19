@@ -5,13 +5,17 @@ use std::io;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
-mod memory;
-mod reducer;
-use memory::{delete_memory, get_memory, post_memory};
-mod models;
-use models::AppState;
 mod healthcheck;
+mod long_term_memory;
+mod memory;
+mod models;
+mod redis_utils;
+mod reducer;
+
 use healthcheck::get_health;
+use memory::{delete_memory, get_memory, post_memory};
+use models::AppState;
+use redis_utils::ensure_redisearch_index;
 
 #[actix_web::main]
 async fn main() -> io::Result<()> {
@@ -22,6 +26,15 @@ async fn main() -> io::Result<()> {
     let openai_client = async_openai::Client::new();
     let redis_url = env::var("REDIS_URL").expect("$REDIS_URL is not set");
     let redis = redis::Client::open(redis_url).unwrap();
+    // TODO: Make these configurable - for now just ADA support
+    let vector_dimensions = 1536;
+    let distance_metric = "COSINE";
+
+    ensure_redisearch_index(&redis, vector_dimensions, distance_metric).unwrap_or_else(|err| {
+        eprintln!("RediSearch index error: {}", err);
+        std::process::exit(1);
+    });
+
     let port = env::var("MOTORHEAD_PORT")
         .ok()
         .and_then(|s| s.parse::<u16>().ok())

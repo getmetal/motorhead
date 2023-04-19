@@ -2,6 +2,7 @@ use actix_web::{delete, error, get, post, web, HttpResponse, Responder};
 use std::sync::Arc;
 use tokio;
 
+use crate::long_term_memory::index_messages;
 use crate::models::{
     AckResponse, AppState, MemoryMessage, MemoryMessagesAndContext, MemoryResponse,
 };
@@ -85,6 +86,7 @@ pub async fn post_memory(
         .map(|memory_message| format!("{}: {}", memory_message.role, memory_message.content))
         .collect();
 
+    // If new context is passed in we overwrite the existing one
     if let Some(context) = memory_messages.context {
         redis::Cmd::set(format!("{}_context", &*session_id), context)
             .query_async::<_, ()>(&mut conn)
@@ -92,10 +94,19 @@ pub async fn post_memory(
             .map_err(error::ErrorInternalServerError)?;
     }
 
-    let res: i64 = redis::Cmd::lpush(&*session_id, messages)
+    let res: i64 = redis::Cmd::lpush(&*session_id, messages.clone())
         .query_async::<_, i64>(&mut conn)
         .await
         .map_err(error::ErrorInternalServerError)?;
+
+    let openai_client = data.openai_client.clone();
+    let session = session_id.clone();
+    let conn_clone = conn.clone();
+    tokio::spawn(async move {
+        if let Err(e) = index_messages(messages, session, openai_client, conn_clone).await {
+            log::error!("Error in index_messages: {:?}", e);
+        }
+    });
 
     if res > data.window_size {
         let state = data.into_inner();
