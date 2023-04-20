@@ -11,11 +11,13 @@ mod memory;
 mod models;
 mod redis_utils;
 mod reducer;
+mod retrieval;
 
 use healthcheck::get_health;
 use memory::{delete_memory, get_memory, post_memory};
 use models::AppState;
 use redis_utils::ensure_redisearch_index;
+use retrieval::run_retrieval;
 
 #[actix_web::main]
 async fn main() -> io::Result<()> {
@@ -61,6 +63,7 @@ async fn main() -> io::Result<()> {
             .service(get_memory)
             .service(post_memory)
             .service(delete_memory)
+            .service(run_retrieval)
             .app_data(web::JsonConfig::default().error_handler(|err, _req| {
                 error::InternalError::from_response(
                     "",

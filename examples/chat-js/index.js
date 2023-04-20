@@ -34,7 +34,7 @@ export const run = async () => {
   const memory = new MotorheadMemory({
     returnMessages: true,
     memoryKey: "history",
-    sessionId: "ozzy-666",
+    sessionId: "ozzy666",
     motorheadURL: "http://localhost:8080"
   });
   await memory.init(); // loads previous state from Motörhead 🤘

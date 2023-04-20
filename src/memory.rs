@@ -80,6 +80,12 @@ pub async fn post_memory(
         .await
         .map_err(error::ErrorInternalServerError)?;
 
+    let memory_messages_clone: Vec<MemoryMessage> = memory_messages
+        .messages
+        .iter()
+        .map(|msg| msg.clone())
+        .collect();
+
     let messages: Vec<String> = memory_messages
         .messages
         .into_iter()
@@ -103,7 +109,9 @@ pub async fn post_memory(
     let session = session_id.clone();
     let conn_clone = conn.clone();
     tokio::spawn(async move {
-        if let Err(e) = index_messages(messages, session, openai_client, conn_clone).await {
+        if let Err(e) =
+            index_messages(memory_messages_clone, session, openai_client, conn_clone).await
+        {
             log::error!("Error in index_messages: {:?}", e);
         }
     });
