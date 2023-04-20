@@ -10,6 +10,10 @@ pub async fn run_retrieval(
     data: web::Data<Arc<AppState>>,
     redis: web::Data<redis::Client>,
 ) -> actix_web::Result<impl Responder> {
+    if !data.long_term_memory {
+        return Ok(HttpResponse::BadRequest().body("Long term memory is disabled"));
+    }
+
     let conn = redis
         .get_tokio_connection_manager()
         .await

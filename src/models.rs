@@ -8,6 +8,7 @@ pub struct AppState {
     pub window_size: i64,
     pub session_cleanup: Arc<Mutex<HashMap<String, bool>>>,
     pub openai_client: async_openai::Client,
+    pub long_term_memory: bool,
 }
 
 #[derive(Serialize, Deserialize)]
