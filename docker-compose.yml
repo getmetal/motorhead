@@ -1,6 +1,6 @@
 version: '3'
 services:
-  server:
+  motorhead:
     build: ./
     ports:
       - '8080:8080'
@@ -8,10 +8,12 @@ services:
       - redis
     environment:
       MOTORHEAD_PORT: 8080
+      MOTORHEAD_LONG_TERM_MEMORY: 'true'
       REDIS_URL: 'redis://redis:6379'
     env_file:
       - .env
+
   redis:
-    image: redis:latest
+    image: redis/redis-stack-server:latest
     ports:
       - '6379:6379'

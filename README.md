@@ -75,9 +75,23 @@ Optionally, `context` can be send in if it needs to get loaded from another data
 
 A max `window_size` is set for the LLM to keep track of the conversation. Once that max is hit, Motörhead will process (`window_size  / 2` messages) and summarize them. Subsequent summaries, as the messages grow, are incremental.
 
+- POST `/sessions/:id/retrieval` - searches by text query using VSS.
+
+```bash
+curl --location 'localhost:8080/sessions/${SESSION_ID}/retrieval' \
+--header 'Content-Type: application/json' \
+--data '{
+    "text": "Generals gathered in their masses, just like witches in black masses"
+}'
+
+```
+
+Searches are segmented (filtered) by the session id provided automatically.
+
 ## Config
 
 - `MOTORHEAD_MAX_WINDOW_SIZE` (default:12) - Number of max messages returned by the server. When this number is reached, a job is triggered to halve it.
+- `MOTORHEAD_LONG_TERM_MEMORY` (default:false) - Enables long term memory using Redisearch VSS.
 - `MOTORHEAD_PORT` (default:8000) - Motörhead Server Port
 - `OPENAI_API_KEY` (required)- [Your api key](https://platform.openai.com/account/api-keys) to connect to OpenAI.
 - `REDIS_URL` (required)- URL used to connect to `redis`.

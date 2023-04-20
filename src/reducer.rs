@@ -72,7 +72,7 @@ pub async fn incremental_summarization(
 pub async fn handle_compaction(
     session_id: String,
     state_clone: Arc<Arc<AppState>>,
-    mut conn: redis::aio::ConnectionManager,
+    mut redis_conn: redis::aio::ConnectionManager,
 ) -> Result<(), MotorheadError> {
     let half = state_clone.window_size / 2;
     let context_key = format!("{}_context", &*session_id);
@@ -83,7 +83,7 @@ pub async fn handle_compaction(
         .arg(i64::try_from(state_clone.window_size).unwrap())
         .cmd("GET")
         .arg(context_key.clone())
-        .query_async(&mut conn)
+        .query_async(&mut redis_conn)
         .await?;
 
     let new_context_result =
@@ -110,7 +110,7 @@ pub async fn handle_compaction(
         .cmd("INCRBY")
         .arg(token_count_key)
         .arg(tokens_used)
-        .query_async(&mut conn)
+        .query_async(&mut redis_conn)
         .await;
 
     match redis_pipe_response_result {

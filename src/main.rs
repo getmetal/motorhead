@@ -5,13 +5,19 @@ use std::io;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
-mod memory;
-mod reducer;
-use memory::{delete_memory, get_memory, post_memory};
-mod models;
-use models::AppState;
 mod healthcheck;
+mod long_term_memory;
+mod memory;
+mod models;
+mod redis_utils;
+mod reducer;
+mod retrieval;
+
 use healthcheck::get_health;
+use memory::{delete_memory, get_memory, post_memory};
+use models::AppState;
+use redis_utils::ensure_redisearch_index;
+use retrieval::run_retrieval;
 
 #[actix_web::main]
 async fn main() -> io::Result<()> {
@@ -22,6 +28,22 @@ async fn main() -> io::Result<()> {
     let openai_client = async_openai::Client::new();
     let redis_url = env::var("REDIS_URL").expect("$REDIS_URL is not set");
     let redis = redis::Client::open(redis_url).unwrap();
+
+    let long_term_memory = env::var("MOTORHEAD_LONG_TERM_MEMORY")
+        .map(|value| value.to_lowercase() == "true")
+        .unwrap_or(false);
+
+    if long_term_memory {
+        // TODO: Make these configurable - for now just ADA support
+        let vector_dimensions = 1536;
+        let distance_metric = "COSINE";
+
+        ensure_redisearch_index(&redis, vector_dimensions, distance_metric).unwrap_or_else(|err| {
+            eprintln!("RediSearch index error: {}", err);
+            std::process::exit(1);
+        });
+    }
+
     let port = env::var("MOTORHEAD_PORT")
         .ok()
         .and_then(|s| s.parse::<u16>().ok())
@@ -37,6 +59,7 @@ async fn main() -> io::Result<()> {
         window_size,
         session_cleanup,
         openai_client,
+        long_term_memory,
     });
 
     HttpServer::new(move || {
@@ -48,6 +71,7 @@ async fn main() -> io::Result<()> {
             .service(get_memory)
             .service(post_memory)
             .service(delete_memory)
+            .service(run_retrieval)
             .app_data(web::JsonConfig::default().error_handler(|err, _req| {
                 error::InternalError::from_response(
                     "",
