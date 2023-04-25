@@ -59,7 +59,7 @@ When building chat applications using LLMs, memory handling is something that  h
 }
 ```
 
-- POST `/sessions/:id/memory` - you can send multiple messages to Motorhead to store.
+- POST `/sessions/:id/memory` - Send an array of messages to Motorhead to store.
 
 ```bash
 curl --location 'localhost:8080/sessions/${SESSION_ID}/memory' \
@@ -68,6 +68,8 @@ curl --location 'localhost:8080/sessions/${SESSION_ID}/memory' \
     "messages": [{ "role": "Human", "content": "ping" }, { "role": "AI", "content": "pong" }]
 }'
 ```
+
+Either an existing or new `SESSION_ID` can be used when storing messages, and the session is automatically created if it did not previously exist.  
 
 Optionally, `context` can be send in if it needs to get loaded from another datastore.
 
