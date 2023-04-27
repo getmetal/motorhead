@@ -1,11 +1,54 @@
 use crate::models::{AppState, MotorheadError};
 use async_openai::{
-    types::{ChatCompletionRequestMessageArgs, CreateChatCompletionRequestArgs, Role},
+    types::{
+        ChatCompletionRequestMessageArgs, CreateChatCompletionRequestArgs,
+        CreateCompletionRequestArgs, Role,
+    },
     Client,
 };
 use std::error::Error;
 use std::sync::Arc;
 use tiktoken_rs::p50k_base;
+
+async fn combine_summaries(
+    openai_client: Client,
+    first_summary: String,
+    second_summary: String,
+) -> Result<(String, usize), Box<dyn Error + Send + Sync>> {
+    let prompt = format!(
+        r#"
+        Combine the two summaries provided into a single concise summary.
+
+        First summary:
+        {first_summary}
+        Second summary:
+        {second_summary}
+        New summary:
+        "#
+    );
+
+    let bpe = p50k_base().unwrap();
+    let tokens_used = bpe.encode_with_special_tokens(&prompt);
+
+    let request = CreateCompletionRequestArgs::default()
+        .max_tokens(512u16)
+        .model("gpt-3.5-turbo")
+        .prompt(prompt)
+        .build()?;
+
+    let response = openai_client.completions().create(request).await?;
+
+    log::info!("Response (combine summaries): {:?}", response);
+
+    let completion = response
+        .choices
+        .first()
+        .ok_or("No completion found")?
+        .text
+        .clone();
+
+    Ok((completion.to_string(), tokens_used.len()))
+}
 
 pub async fn incremental_summarization(
     openai_client: Client,
@@ -85,6 +128,10 @@ pub async fn handle_compaction(
         .arg(context_key.clone())
         .query_async(&mut redis_conn)
         .await?;
+
+    let max_tokens = 4096u16;
+    let summary_max_tokens = 512u16;
+    let _max_message_tokens = max_tokens - summary_max_tokens;
 
     let new_context_result =
         incremental_summarization(state_clone.openai_client.clone(), context, messages).await;
