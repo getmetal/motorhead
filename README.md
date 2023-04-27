@@ -69,7 +69,7 @@ curl --location 'localhost:8080/sessions/${SESSION_ID}/memory' \
 }'
 ```
 
-Either an existing or new `SESSION_ID` can be used when storing messages, and the session is automatically created if it did not previously exist.  
+Either an existing or new `SESSION_ID` can be used when storing messages, and the session is automatically created if it did not previously exist.
 
 Optionally, `context` can be send in if it needs to get loaded from another datastore.
 
@@ -94,7 +94,7 @@ Searches are segmented (filtered) by the session id provided automatically.
 
 - `MOTORHEAD_MAX_WINDOW_SIZE` (default:12) - Number of max messages returned by the server. When this number is reached, a job is triggered to halve it.
 - `MOTORHEAD_LONG_TERM_MEMORY` (default:false) - Enables long term memory using Redisearch VSS.
-- `MOTORHEAD_PORT` (default:8000) - Motörhead Server Port
+- `PORT` (default:8000) - Motörhead Server Port
 - `OPENAI_API_KEY` (required)- [Your api key](https://platform.openai.com/account/api-keys) to connect to OpenAI.
 - `REDIS_URL` (required)- URL used to connect to `redis`.
 
@@ -107,7 +107,7 @@ docker-compose build && docker-compose up
 
 Or you can use the image `docker pull ghcr.io/getmetal/motorhead:latest` directly:
 ```bash
-docker run --name motorhead -p 8080:8080 -e MOTORHEAD_PORT=8080 -e REDIS_URL='redis://redis:6379' -d ghcr.io/getmetal/motorhead:latest
+docker run --name motorhead -p 8080:8080 -e PORT=8080 -e REDIS_URL='redis://redis:6379' -d ghcr.io/getmetal/motorhead:latest
 ```
 
 ## Examples
