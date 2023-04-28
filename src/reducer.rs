@@ -1,102 +1,49 @@
 use crate::models::{AppState, MotorheadError};
 use async_openai::{
-    types::{
-        ChatCompletionRequestMessageArgs, CreateChatCompletionRequestArgs,
-        CreateCompletionRequestArgs, Role,
-    },
+    types::{ChatCompletionRequestMessageArgs, CreateChatCompletionRequestArgs, Role},
     Client,
 };
 use std::error::Error;
 use std::sync::Arc;
 use tiktoken_rs::p50k_base;
 
-async fn combine_summaries(
-    openai_client: Client,
-    first_summary: String,
-    second_summary: String,
-) -> Result<(String, usize), Box<dyn Error + Send + Sync>> {
-    let prompt = format!(
-        r#"
-        Combine the two summaries provided into a single concise summary.
-
-        First summary:
-        {first_summary}
-        Second summary:
-        {second_summary}
-        New summary:
-        "#
-    );
-
-    let bpe = p50k_base().unwrap();
-    let tokens_used = bpe.encode_with_special_tokens(&prompt);
-
-    let request = CreateCompletionRequestArgs::default()
-        .max_tokens(512u16)
-        .model("gpt-3.5-turbo")
-        .prompt(prompt)
-        .build()?;
-
-    let response = openai_client.completions().create(request).await?;
-
-    log::info!("Response (combine summaries): {:?}", response);
-
-    let completion = response
-        .choices
-        .first()
-        .ok_or("No completion found")?
-        .text
-        .clone();
-
-    Ok((completion.to_string(), tokens_used.len()))
-}
-
 pub async fn incremental_summarization(
     openai_client: Client,
     context: Option<String>,
     mut messages: Vec<String>,
-) -> Result<(String, usize), Box<dyn Error + Send + Sync>> {
+) -> Result<(String, u32), Box<dyn Error + Send + Sync>> {
     messages.reverse();
     let messages_joined = messages.join("\n");
     let prev_summary = context.as_deref().unwrap_or_default();
     // Taken from langchain
     let progresive_prompt = format!(
         r#"
-        Progressively summarize the lines of conversation provided, adding onto the previous summary returning a new summary. If the lines are meaningless just return NONE
+Progressively summarize the lines of conversation provided, adding onto the previous summary returning a new summary. If the lines are meaningless just return NONE
 
-        EXAMPLE
-        Current summary:
-        The human asks who is the lead singer of Motörhead. The AI responds Lemmy Kilmister.
-        New lines of conversation:
-        Human: What are the other members of Motörhead?
-        AI: The original members included Lemmy Kilmister (vocals, bass), Larry Wallis (guitar), and Lucas Fox (drums), with notable members throughout the years including \"Fast\" Eddie Clarke (guitar), Phil \"Philthy Animal\" Taylor (drums), and Mikkey Dee (drums).
-        New summary:
-        The human asks who is the lead singer and other members of Motörhead. The AI responds Lemmy Kilmister is the lead singer and other original members include Larry Wallis, and Lucas Fox, with notable past members including \"Fast\" Eddie Clarke, Phil \"Philthy Animal\" Taylor, and Mikkey Dee.
-        END OF EXAMPLE
+EXAMPLE
+Current summary:
+The human asks who is the lead singer of Motörhead. The AI responds Lemmy Kilmister.
+New lines of conversation:
+Human: What are the other members of Motörhead?
+AI: The original members included Lemmy Kilmister (vocals, bass), Larry Wallis (guitar), and Lucas Fox (drums), with notable members throughout the years including \"Fast\" Eddie Clarke (guitar), Phil \"Philthy Animal\" Taylor (drums), and Mikkey Dee (drums).
+New summary:
+The human asks who is the lead singer and other members of Motörhead. The AI responds Lemmy Kilmister is the lead singer and other original members include Larry Wallis, and Lucas Fox, with notable past members including \"Fast\" Eddie Clarke, Phil \"Philthy Animal\" Taylor, and Mikkey Dee.
+END OF EXAMPLE
 
-        Current summary:
-        {prev_summary}
-        New lines of conversation:
-        {messages_joined}
-        New summary:
-        "#
+Current summary:
+{prev_summary}
+New lines of conversation:
+{messages_joined}
+New summary:
+"#
     );
-
-    let bpe = p50k_base().unwrap();
-    let tokens_used = bpe.encode_with_special_tokens(&progresive_prompt);
-
     let request = CreateChatCompletionRequestArgs::default()
         .max_tokens(512u16)
         .model("gpt-3.5-turbo")
-        .messages([
-            ChatCompletionRequestMessageArgs::default()
-                .role(Role::System)
-                .content("You are a helpful AI assistant.")
-                .build()?,
-            ChatCompletionRequestMessageArgs::default()
-                .role(Role::User)
-                .content(progresive_prompt)
-                .build()?,
-        ])
+        .messages([ChatCompletionRequestMessageArgs::default()
+            .role(Role::User)
+            .content(progresive_prompt)
+            .build()?])
         .build()?;
 
     let response = openai_client.chat().create(request).await?;
@@ -109,7 +56,10 @@ pub async fn incremental_summarization(
         .content
         .clone();
 
-    Ok((completion.to_string(), tokens_used.len()))
+    let usage = response.usage.ok_or("No Usage found")?;
+    let tokens_used = usage.total_tokens;
+
+    Ok((completion.to_string(), tokens_used))
 }
 
 pub async fn handle_compaction(
@@ -119,7 +69,7 @@ pub async fn handle_compaction(
 ) -> Result<(), MotorheadError> {
     let half = state_clone.window_size / 2;
     let context_key = format!("{}_context", &*session_id);
-    let (messages, context): (Vec<String>, Option<String>) = redis::pipe()
+    let (messages, mut context): (Vec<String>, Option<String>) = redis::pipe()
         .cmd("LRANGE")
         .arg(&*session_id)
         .arg(i64::try_from(half).unwrap())
@@ -129,42 +79,77 @@ pub async fn handle_compaction(
         .query_async(&mut redis_conn)
         .await?;
 
-    let max_tokens = 4096u16;
-    let summary_max_tokens = 512u16;
-    let _max_message_tokens = max_tokens - summary_max_tokens;
+    let max_tokens = 4096usize;
+    let summary_max_tokens = 512usize;
+    let buffer_tokens = 230usize;
+    let max_message_tokens = max_tokens - summary_max_tokens - buffer_tokens;
 
-    let new_context_result =
-        incremental_summarization(state_clone.openai_client.clone(), context, messages).await;
+    let mut total_tokens = 0;
+    let mut temp_messages = Vec::new();
+    let mut total_tokens_temp = 0;
 
-    if let Err(ref error) = new_context_result {
-        log::error!("Problem getting summary: {:?}", error);
-        return Err(MotorheadError::IncrementalSummarizationError(
-            error.to_string(),
-        ));
+    for message in messages {
+        let bpe = p50k_base().unwrap();
+        let message_tokens = bpe.encode_with_special_tokens(&message);
+        let message_tokens_used = message_tokens.len();
+
+        if total_tokens_temp + message_tokens_used <= max_message_tokens {
+            temp_messages.push(message);
+            total_tokens_temp += message_tokens_used;
+        } else {
+            let (summary, summary_tokens_used) = incremental_summarization(
+                state_clone.openai_client.clone(),
+                context.clone(),
+                temp_messages,
+            )
+            .await?;
+
+            total_tokens += summary_tokens_used;
+
+            context = Some(summary);
+            temp_messages = vec![message];
+            total_tokens_temp = message_tokens_used;
+        }
     }
 
-    let (new_context, tokens_used) = new_context_result.unwrap_or_default();
+    if !temp_messages.is_empty() {
+        let (summary, summary_tokens_used) = incremental_summarization(
+            state_clone.openai_client.clone(),
+            context.clone(),
+            temp_messages,
+        )
+        .await?;
+        total_tokens += summary_tokens_used;
+        context = Some(summary);
+    }
 
-    let token_count_key = format!("{}_tokens", &*session_id);
-    let redis_pipe_response_result: Result<((), (), i64), redis::RedisError> = redis::pipe()
-        .cmd("LTRIM")
-        .arg(&*session_id)
-        .arg(0)
-        .arg(i64::try_from(half).unwrap())
-        .cmd("SET")
-        .arg(context_key)
-        .arg(new_context)
-        .cmd("INCRBY")
-        .arg(token_count_key)
-        .arg(tokens_used)
-        .query_async(&mut redis_conn)
-        .await;
+    if let Some(new_context) = context {
+        let token_count_key = format!("{}_tokens", &*session_id);
+        let redis_pipe_response_result: Result<((), (), i64), redis::RedisError> = redis::pipe()
+            .cmd("LTRIM")
+            .arg(&*session_id)
+            .arg(0)
+            .arg(i64::try_from(half).unwrap())
+            .cmd("SET")
+            .arg(context_key)
+            .arg(new_context)
+            .cmd("INCRBY")
+            .arg(token_count_key)
+            .arg(total_tokens)
+            .query_async(&mut redis_conn)
+            .await;
 
-    match redis_pipe_response_result {
-        Ok(_) => Ok(()),
-        Err(e) => {
-            log::error!("Error executing the redis pipeline: {:?}", e);
-            Err(MotorheadError::RedisError(e))
+        match redis_pipe_response_result {
+            Ok(_) => Ok(()),
+            Err(e) => {
+                log::error!("Error executing the redis pipeline: {:?}", e);
+                Err(MotorheadError::RedisError(e))
+            }
         }
+    } else {
+        log::error!("No context found after summarization");
+        Err(MotorheadError::IncrementalSummarizationError(
+            "No context found after summarization".to_string(),
+        ))
     }
 }

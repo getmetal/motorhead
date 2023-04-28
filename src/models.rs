@@ -1,6 +1,7 @@
 use redis::{FromRedisValue, RedisError, Value};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::error::Error;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
@@ -59,6 +60,12 @@ impl std::fmt::Display for MotorheadError {
                 write!(f, "Incremental summarization error: {}", e)
             }
         }
+    }
+}
+
+impl From<Box<dyn Error + Send + Sync>> for MotorheadError {
+    fn from(error: Box<dyn Error + Send + Sync>) -> Self {
+        MotorheadError::IncrementalSummarizationError(error.to_string())
     }
 }
 
