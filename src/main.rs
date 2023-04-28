@@ -44,7 +44,7 @@ async fn main() -> io::Result<()> {
         });
     }
 
-    let port = env::var("MOTORHEAD_PORT")
+    let port = env::var("PORT")
         .ok()
         .and_then(|s| s.parse::<u16>().ok())
         .unwrap_or_else(|| 8000);
