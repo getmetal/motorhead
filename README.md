@@ -1,5 +1,5 @@
 <h1 align="center" >
-Motörhead
+🧠 Motörhead
 </h1>
 <p align="center">
     <a href="https://github.com/getmetal/motorhead/blob/main/LICENSE">
