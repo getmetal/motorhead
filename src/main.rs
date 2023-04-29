@@ -47,12 +47,12 @@ async fn main() -> io::Result<()> {
     let port = env::var("PORT")
         .ok()
         .and_then(|s| s.parse::<u16>().ok())
-        .unwrap_or_else(|| 8000);
+        .unwrap_or(8000);
 
     let window_size = env::var("MOTORHEAD_MAX_WINDOW_SIZE")
         .ok()
         .and_then(|s| s.parse::<i64>().ok())
-        .unwrap_or_else(|| 12);
+        .unwrap_or(12);
 
     let session_cleanup = Arc::new(Mutex::new(HashMap::new()));
     let session_state = Arc::new(AppState {

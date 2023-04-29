@@ -1,12 +1,10 @@
-use actix_web::{delete, error, get, post, web, HttpResponse, Responder};
-use std::sync::Arc;
-use tokio;
-
 use crate::long_term_memory::index_messages;
 use crate::models::{
     AckResponse, AppState, MemoryMessage, MemoryMessagesAndContext, MemoryResponse,
 };
 use crate::reducer::handle_compaction;
+use actix_web::{delete, error, get, post, web, HttpResponse, Responder};
+use std::sync::Arc;
 
 #[get("/sessions/{session_id}/memory")]
 pub async fn get_memory(
@@ -80,11 +78,7 @@ pub async fn post_memory(
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    let memory_messages_clone: Vec<MemoryMessage> = memory_messages
-        .messages
-        .iter()
-        .map(|msg| msg.clone())
-        .collect();
+    let memory_messages_clone: Vec<MemoryMessage> = memory_messages.messages.to_vec();
 
     let messages: Vec<String> = memory_messages
         .messages
@@ -122,16 +116,18 @@ pub async fn post_memory(
         let state = data.into_inner();
         let mut session_cleanup = state.session_cleanup.lock().await;
 
-        if !session_cleanup.get(&*session_id).unwrap_or_else(|| &false) {
+        if !session_cleanup.get(&*session_id).unwrap_or(&false) {
             session_cleanup.insert((&*session_id.to_string()).into(), true);
             let session_cleanup = Arc::clone(&state.session_cleanup);
             let session_id = session_id.clone();
-            let state_clone = Arc::clone(&state);
+            let openai_client = state.openai_client.clone();
+            let window_size = state.window_size;
 
             tokio::spawn(async move {
                 log::info!("running compact");
                 let _compaction_result =
-                    handle_compaction(session_id.to_string(), state_clone, conn).await;
+                    handle_compaction(session_id.to_string(), window_size, openai_client, conn)
+                        .await;
 
                 let mut lock = session_cleanup.lock().await;
                 lock.remove(&session_id);
@@ -157,7 +153,7 @@ pub async fn delete_memory(
 
     let context_key = format!("{}_context", &*session_id);
     let token_count_key = format!("{}_tokens", &*session_id);
-    let session_key = format!("{}", &*session_id);
+    let session_key = (*session_id).to_string();
     let keys = vec![context_key, session_key, token_count_key];
 
     redis::Cmd::del(keys)

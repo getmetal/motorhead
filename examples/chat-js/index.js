@@ -12,7 +12,6 @@ import {
   SystemMessagePromptTemplate,
   MessagesPlaceholder,
 } from "langchain/prompts";
-// import MotorheadMemory from "./motorheadMemory.js";
 import { MotorheadMemory } from "langchain/memory";
 
 const rl = readline.createInterface({
