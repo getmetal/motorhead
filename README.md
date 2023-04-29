@@ -112,4 +112,5 @@ docker run --name motorhead -p 8080:8080 -e PORT=8080 -e REDIS_URL='redis://redi
 
 ## Examples
 
-- Check out our [Chat JS Example](examples/chat-js/)
+- [Chat JS Example](examples/chat-js/)
+- [Chat Python Example](examples/chat-python/)
