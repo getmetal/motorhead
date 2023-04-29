@@ -1,10 +1,9 @@
-use crate::models::{AppState, MotorheadError};
+use crate::models::MotorheadError;
 use async_openai::{
     types::{ChatCompletionRequestMessageArgs, CreateChatCompletionRequestArgs, Role},
     Client,
 };
 use std::error::Error;
-use std::sync::Arc;
 use tiktoken_rs::p50k_base;
 
 pub async fn incremental_summarization(
@@ -64,16 +63,17 @@ New summary:
 
 pub async fn handle_compaction(
     session_id: String,
-    state_clone: Arc<Arc<AppState>>,
+    window_size: i64,
+    openai_client: Client,
     mut redis_conn: redis::aio::ConnectionManager,
 ) -> Result<(), MotorheadError> {
-    let half = state_clone.window_size / 2;
+    let half = window_size / 2;
     let context_key = format!("{}_context", &*session_id);
     let (messages, mut context): (Vec<String>, Option<String>) = redis::pipe()
         .cmd("LRANGE")
         .arg(&*session_id)
         .arg(half)
-        .arg(state_clone.window_size)
+        .arg(window_size)
         .cmd("GET")
         .arg(context_key.clone())
         .query_async(&mut redis_conn)
@@ -97,12 +97,9 @@ pub async fn handle_compaction(
             temp_messages.push(message);
             total_tokens_temp += message_tokens_used;
         } else {
-            let (summary, summary_tokens_used) = incremental_summarization(
-                state_clone.openai_client.clone(),
-                context.clone(),
-                temp_messages,
-            )
-            .await?;
+            let (summary, summary_tokens_used) =
+                incremental_summarization(openai_client.clone(), context.clone(), temp_messages)
+                    .await?;
 
             total_tokens += summary_tokens_used;
 
@@ -113,12 +110,9 @@ pub async fn handle_compaction(
     }
 
     if !temp_messages.is_empty() {
-        let (summary, summary_tokens_used) = incremental_summarization(
-            state_clone.openai_client.clone(),
-            context.clone(),
-            temp_messages,
-        )
-        .await?;
+        let (summary, summary_tokens_used) =
+            incremental_summarization(openai_client.clone(), context.clone(), temp_messages)
+                .await?;
         total_tokens += summary_tokens_used;
         context = Some(summary);
     }

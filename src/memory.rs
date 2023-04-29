@@ -120,12 +120,14 @@ pub async fn post_memory(
             session_cleanup.insert((&*session_id.to_string()).into(), true);
             let session_cleanup = Arc::clone(&state.session_cleanup);
             let session_id = session_id.clone();
-            let state_clone = Arc::clone(&state);
+            let openai_client = state.openai_client.clone();
+            let window_size = state.window_size;
 
             tokio::spawn(async move {
                 log::info!("running compact");
                 let _compaction_result =
-                    handle_compaction(session_id.to_string(), state_clone, conn).await;
+                    handle_compaction(session_id.to_string(), window_size, openai_client, conn)
+                        .await;
 
                 let mut lock = session_cleanup.lock().await;
                 lock.remove(&session_id);
