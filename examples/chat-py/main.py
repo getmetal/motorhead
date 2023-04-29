@@ -81,7 +81,7 @@ async def run():
     memory = MotorheadMemory(
         return_messages=True,
         memory_key="history",
-        session_id="ozzy667",
+        session_id="davemustaine666",
         url="http://localhost:8080",
     )
     await memory.init()
@@ -114,7 +114,7 @@ async def run():
     print(colored("\nMotörhead 🤘chat start\n", "blue"))
     answer = input(colored("", "green"))
     response = chain.run(answer)
-    print(response)
+    print(colored(response, "green"))
     post_to_bash()
 
 
@@ -123,4 +123,3 @@ if __name__ == "__main__":
         asyncio.run(run())
     except KeyboardInterrupt as kie:
         print(colored("\nI see you have chosen to end the conversation with me 💔. Good bye!", "yellow"))
-
