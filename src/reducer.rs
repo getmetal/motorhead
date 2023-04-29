@@ -59,7 +59,7 @@ New summary:
     let usage = response.usage.ok_or("No Usage found")?;
     let tokens_used = usage.total_tokens;
 
-    Ok((completion.to_string(), tokens_used))
+    Ok((completion, tokens_used))
 }
 
 pub async fn handle_compaction(
