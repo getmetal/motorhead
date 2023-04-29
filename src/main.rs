@@ -53,6 +53,7 @@ async fn main() -> io::Result<()> {
         .ok()
         .and_then(|s| s.parse::<i64>().ok())
         .unwrap_or(12);
+    let model = env::var("MOTORHEAD_MODEL").unwrap_or_else(|_| "gpt-3.5-turbo".to_string());
 
     let session_cleanup = Arc::new(Mutex::new(HashMap::new()));
     let session_state = Arc::new(AppState {
@@ -60,6 +61,7 @@ async fn main() -> io::Result<()> {
         session_cleanup,
         openai_client,
         long_term_memory,
+        model,
     });
 
     HttpServer::new(move || {

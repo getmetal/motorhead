@@ -109,7 +109,7 @@ async def run():
             if not answer_i:
                 continue
             response_i = chain.run(answer_i)
-            print(response_i)
+            print(colored(response_i, "green"))
 
     print(colored("\nMotörhead 🤘chat start\n", "blue"))
     answer = input(colored("", "green"))

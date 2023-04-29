@@ -10,6 +10,7 @@ services:
       PORT: 8080
       MOTORHEAD_MAX_WINDOW_SIZE: 25
       MOTORHEAD_LONG_TERM_MEMORY: 'true'
+      MOTORHEAD_MODEL: 'gpt-3.5-turbo'
       REDIS_URL: 'redis://redis:6379'
     env_file:
       - .env

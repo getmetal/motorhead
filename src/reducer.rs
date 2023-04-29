@@ -7,6 +7,7 @@ use std::error::Error;
 use tiktoken_rs::p50k_base;
 
 pub async fn incremental_summarization(
+    model: String,
     openai_client: Client,
     context: Option<String>,
     mut messages: Vec<String>,
@@ -38,7 +39,7 @@ New summary:
     );
     let request = CreateChatCompletionRequestArgs::default()
         .max_tokens(512u16)
-        .model("gpt-3.5-turbo")
+        .model(model)
         .messages([ChatCompletionRequestMessageArgs::default()
             .role(Role::User)
             .content(progresive_prompt)
@@ -63,6 +64,7 @@ New summary:
 
 pub async fn handle_compaction(
     session_id: String,
+    model: String,
     window_size: i64,
     openai_client: Client,
     mut redis_conn: redis::aio::ConnectionManager,
@@ -97,9 +99,13 @@ pub async fn handle_compaction(
             temp_messages.push(message);
             total_tokens_temp += message_tokens_used;
         } else {
-            let (summary, summary_tokens_used) =
-                incremental_summarization(openai_client.clone(), context.clone(), temp_messages)
-                    .await?;
+            let (summary, summary_tokens_used) = incremental_summarization(
+                model.to_string(),
+                openai_client.clone(),
+                context.clone(),
+                temp_messages,
+            )
+            .await?;
 
             total_tokens += summary_tokens_used;
 
@@ -111,7 +117,7 @@ pub async fn handle_compaction(
 
     if !temp_messages.is_empty() {
         let (summary, summary_tokens_used) =
-            incremental_summarization(openai_client.clone(), context.clone(), temp_messages)
+            incremental_summarization(model, openai_client.clone(), context.clone(), temp_messages)
                 .await?;
         total_tokens += summary_tokens_used;
         context = Some(summary);
