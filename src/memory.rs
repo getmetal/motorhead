@@ -116,7 +116,7 @@ pub async fn post_memory(
         let state = data.into_inner();
         let mut session_cleanup = state.session_cleanup.lock().await;
 
-        if !session_cleanup.get(&*session_id).unwrap_or_else(|| &false) {
+        if !session_cleanup.get(&*session_id).unwrap_or(&false) {
             session_cleanup.insert((&*session_id.to_string()).into(), true);
             let session_cleanup = Arc::clone(&state.session_cleanup);
             let session_id = session_id.clone();
@@ -151,7 +151,7 @@ pub async fn delete_memory(
 
     let context_key = format!("{}_context", &*session_id);
     let token_count_key = format!("{}_tokens", &*session_id);
-    let session_key = format!("{}", &*session_id);
+    let session_key = (*session_id).to_string();
     let keys = vec![context_key, session_key, token_count_key];
 
     redis::Cmd::del(keys)

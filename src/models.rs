@@ -112,8 +112,8 @@ pub fn parse_redisearch_response(response: &Value) -> Vec<RedisearchResult> {
             let mut results = Vec::new();
             let n = array.len();
 
-            for i in 1..n {
-                if let Value::Bulk(ref bulk) = array[i] {
+            for item in array.iter().take(n).skip(1) {
+                if let Value::Bulk(ref bulk) = item {
                     if let Ok(result) =
                         RedisearchResult::from_redis_value(&Value::Bulk(bulk.clone()))
                     {
