@@ -33,10 +33,10 @@ export const run = async () => {
   const memory = new MotorheadMemory({
     returnMessages: true,
     memoryKey: "history",
-    sessionId: "ozzy666",
+    sessionId: "ozzy6666",
     motorheadURL: "http://localhost:8080"
   });
-  await memory.init(); // loads previous state from Motörhead 🤘
+  await memory.init(); // loads previous state from Motorhead 🤘
   let context = "";
 
   if (memory.context) {
@@ -67,7 +67,7 @@ export const run = async () => {
   };
 
   rl.question(
-    chalk.blue(`\nMotörhead 🤘chat start\n`),
+    chalk.blue(`\nMotorhead 🤘chat start\n`),
     async function(answer) {
       const res = await chain.call({ input: answer });
       await postToBash(res.response);

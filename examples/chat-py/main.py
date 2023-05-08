@@ -111,7 +111,7 @@ async def run():
             response_i = chain.run(answer_i)
             print(colored(response_i, "green"))
 
-    print(colored("\nMotörhead 🤘chat start\n", "blue"))
+    print(colored("\nMotorhead 🤘chat start\n", "blue"))
     answer = input(colored("", "green"))
     response = chain.run(answer)
     print(colored(response, "green"))

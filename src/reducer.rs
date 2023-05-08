@@ -22,12 +22,12 @@ Progressively summarize the lines of conversation provided, adding onto the prev
 
 EXAMPLE
 Current summary:
-The human asks who is the lead singer of Motörhead. The AI responds Lemmy Kilmister.
+The human asks who is the lead singer of Motorhead. The AI responds Lemmy Kilmister.
 New lines of conversation:
-Human: What are the other members of Motörhead?
+Human: What are the other members of Motorhead?
 AI: The original members included Lemmy Kilmister (vocals, bass), Larry Wallis (guitar), and Lucas Fox (drums), with notable members throughout the years including \"Fast\" Eddie Clarke (guitar), Phil \"Philthy Animal\" Taylor (drums), and Mikkey Dee (drums).
 New summary:
-The human asks who is the lead singer and other members of Motörhead. The AI responds Lemmy Kilmister is the lead singer and other original members include Larry Wallis, and Lucas Fox, with notable past members including \"Fast\" Eddie Clarke, Phil \"Philthy Animal\" Taylor, and Mikkey Dee.
+The human asks who is the lead singer and other members of Motorhead. The AI responds Lemmy Kilmister is the lead singer and other original members include Larry Wallis, and Lucas Fox, with notable past members including \"Fast\" Eddie Clarke, Phil \"Philthy Animal\" Taylor, and Mikkey Dee.
 END OF EXAMPLE
 
 Current summary:
