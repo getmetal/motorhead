@@ -23,7 +23,7 @@ use retrieval::run_retrieval;
 async fn main() -> io::Result<()> {
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
 
-    log::info!("Starting Motörhead 🤘");
+    log::info!("Starting Motorhead 🤘");
 
     let openai_client = async_openai::Client::new();
     let redis_url = env::var("REDIS_URL").expect("$REDIS_URL is not set");

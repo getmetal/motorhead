@@ -1,5 +1,5 @@
 <h1 align="center" >
-🧠 Motörhead
+🧠 Motorhead
 </h1>
 <p align="center">
     <a href="https://github.com/getmetal/motorhead/blob/main/LICENSE">
@@ -13,13 +13,13 @@
   </a>
 </p>
 
-Motörhead is a memory and information retrieval server for LLMs.
+Motorhead is a memory and information retrieval server for LLMs.
 
 [![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/template/bmO_uf?referralCode=5NirXf)
 
-## Why use Motörhead?
+## Why use Motorhead?
 
-When building chat applications using LLMs, memory handling is something that  has to be built every time. Motörhead is a server to assist with that process. It provides 3 simple APIs:
+When building chat applications using LLMs, memory handling is something that  has to be built every time. Motorhead is a server to assist with that process. It provides 3 simple APIs:
 
 - GET `/sessions/:id/memory` returns messages up to `MAX_WINDOW_SIZE`.
 ```json
@@ -75,7 +75,7 @@ Optionally, `context` can be send in if it needs to get loaded from another data
 
 - DELETE `/sessions/:id/memory` - deletes the session's message list.
 
-A max `window_size` is set for the LLM to keep track of the conversation. Once that max is hit, Motörhead will process (`window_size  / 2` messages) and summarize them. Subsequent summaries, as the messages grow, are incremental.
+A max `window_size` is set for the LLM to keep track of the conversation. Once that max is hit, Motorhead will process (`window_size  / 2` messages) and summarize them. Subsequent summaries, as the messages grow, are incremental.
 
 - POST `/sessions/:id/retrieval` - searches by text query using VSS.
 
@@ -95,7 +95,7 @@ Searches are segmented (filtered) by the session id provided automatically.
 - `MOTORHEAD_MAX_WINDOW_SIZE` (default:12) - Number of max messages returned by the server. When this number is reached, a job is triggered to halve it.
 - `MOTORHEAD_LONG_TERM_MEMORY` (default:false) - Enables long term memory using Redisearch VSS.
 - `MOTORHEAD_MODEL` (default:gpt-3.5-turbo) - Model used to run the incremental summarization. Use `gpt-3.5-turbo` or `gpt-4` - otherwise some weird things might happen.
-- `PORT` (default:8000) - Motörhead Server Port
+- `PORT` (default:8000) - Motorhead Server Port
 - `OPENAI_API_KEY` (required)- [Your api key](https://platform.openai.com/account/api-keys) to connect to OpenAI.
 - `REDIS_URL` (required)- URL used to connect to `redis`.
 
