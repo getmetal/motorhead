@@ -14,7 +14,7 @@ mod reducer;
 mod retrieval;
 
 use healthcheck::get_health;
-use memory::{delete_memory, get_memory, post_memory};
+use memory::{delete_memory, get_memory, post_memory, get_sessions};
 use models::AppState;
 use redis_utils::ensure_redisearch_index;
 use retrieval::run_retrieval;
@@ -73,6 +73,7 @@ async fn main() -> io::Result<()> {
             .service(get_memory)
             .service(post_memory)
             .service(delete_memory)
+            .service(get_sessions)
             .service(run_retrieval)
             .app_data(web::JsonConfig::default().error_handler(|err, _req| {
                 error::InternalError::from_response(

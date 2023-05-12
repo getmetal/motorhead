@@ -6,25 +6,43 @@ use crate::reducer::handle_compaction;
 use actix_web::{delete, error, get, post, web, HttpResponse, Responder};
 use std::sync::Arc;
 
+
 #[get("/sessions")]
 pub async fn get_sessions(
   data: web::Data<Arc<AppState>>,
   redis: web::Data<redis::Client>,
 ) -> actix_web::Result<impl Responder> {
   let mut conn = redis
-    .get_tokio_connection_manager()
-    .await
-    .map_err(error::ErrorInternalServerError)?;
+          .get_tokio_connection_manager()
+          .await
+          .map_err(error::ErrorInternalServerError)?;
 
-  let sessions: Vec<String> = redis::cmd("KEYS")
-    .arg("*")
-    .query_async(&mut conn)
-    .await
-    .map_err(error::ErrorInternalServerError)?;
+      let mut cursor: isize = 0;
+      let mut session_keys: Vec<String> = vec![];
+      loop {
+          let (next_cursor, keys): (isize, Vec<String>) = redis::cmd("SCAN")
+              .arg(cursor)
+              .arg("MATCH")
+              .arg("*_context")  // This matches all session keys
+              .query_async(&mut conn)
+              .await
+              .map_err(error::ErrorInternalServerError)?;
 
-  Ok(HttpResponse::Ok()
-    .content_type("application/json")
-    .json(sessions))
+          session_keys.extend(keys);
+          cursor = next_cursor;
+          if cursor == 0 {
+              break;
+          }
+      }
+
+      let session_ids: Vec<String> = session_keys
+          .into_iter()
+          .map(|key| key.trim_end_matches("_context").to_owned())
+          .collect();
+
+      Ok(HttpResponse::Ok()
+          .content_type("application/json")
+          .json(session_ids))
 }
 
 #[get("/sessions/{session_id}/memory")]
