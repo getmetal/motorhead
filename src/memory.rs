@@ -6,6 +6,27 @@ use crate::reducer::handle_compaction;
 use actix_web::{delete, error, get, post, web, HttpResponse, Responder};
 use std::sync::Arc;
 
+#[get("/sessions")]
+pub async fn get_sessions(
+  data: web::Data<Arc<AppState>>,
+  redis: web::Data<redis::Client>,
+) -> actix_web::Result<impl Responder> {
+  let mut conn = redis
+    .get_tokio_connection_manager()
+    .await
+    .map_err(error::ErrorInternalServerError)?;
+
+  let sessions: Vec<String> = redis::cmd("KEYS")
+    .arg("*")
+    .query_async(&mut conn)
+    .await
+    .map_err(error::ErrorInternalServerError)?;
+
+  Ok(HttpResponse::Ok()
+    .content_type("application/json")
+    .json(sessions))
+}
+
 #[get("/sessions/{session_id}/memory")]
 pub async fn get_memory(
     session_id: web::Path<String>,
