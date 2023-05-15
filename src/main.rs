@@ -19,6 +19,7 @@ use models::AppState;
 use redis_utils::ensure_redisearch_index;
 use retrieval::run_retrieval;
 
+
 #[actix_web::main]
 async fn main() -> io::Result<()> {
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
@@ -64,7 +65,16 @@ async fn main() -> io::Result<()> {
         model,
     });
 
-    HttpServer::new(move || {
+    async fn on_start_logger(port: u16) -> io::Result<()> {
+        print!("\n");
+        println!("-----------------------------------");
+        println!("🧠 Motorhead running on port: {}", port);
+        println!("-----------------------------------");
+
+        Ok(())
+    }
+
+    let server = HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(redis.clone()))
             .app_data(web::Data::new(session_state.clone()))
@@ -86,6 +96,8 @@ async fn main() -> io::Result<()> {
             }))
     })
     .bind(("0.0.0.0", port))?
-    .run()
-    .await
+    .run();
+
+    tokio::join!(server, on_start_logger(port));
+    Ok(())
 }
