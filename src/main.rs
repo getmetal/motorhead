@@ -97,6 +97,20 @@ async fn main() -> io::Result<()> {
     .bind(("0.0.0.0", port))?
     .run();
 
-    tokio::join!(server, on_start_logger(port));
+    let server_future = server;
+    let logger_future = on_start_logger(port);
+
+    let (server_result, logger_result) = tokio::join!(server_future, logger_future);
+
+    // Handle the Result from server
+    if let Err(e) = server_result {
+        eprintln!("Server error: {}", e);
+    }
+
+    // Handle the Result from logger
+    if let Err(e) = logger_result {
+        eprintln!("Logger error: {}", e);
+    }
+
     Ok(())
 }
