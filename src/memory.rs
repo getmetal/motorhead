@@ -23,7 +23,7 @@ pub async fn get_sessions(
           let (next_cursor, keys): (isize, Vec<String>) = redis::cmd("SCAN")
               .arg(cursor)
               .arg("MATCH")
-              .arg("*_context")  // This matches all session keys
+              .arg("*_session")  // This matches all session keys
               .query_async(&mut conn)
               .await
               .map_err(error::ErrorInternalServerError)?;
@@ -37,7 +37,7 @@ pub async fn get_sessions(
 
       let session_ids: Vec<String> = session_keys
           .into_iter()
-          .map(|key| key.trim_end_matches("_context").to_owned())
+          .map(|key| key.trim_end_matches("_session").to_owned())
           .collect();
 
       Ok(HttpResponse::Ok()
@@ -56,7 +56,7 @@ pub async fn get_memory(
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    let lrange_key = &*session_id;
+    let lrange_key = format!("{}_session", &*session_id);
     let context_key = format!("{}_context", &*session_id);
     let token_count_key = format!("{}_tokens", &*session_id);
     let keys = vec![context_key, token_count_key];
@@ -133,7 +133,7 @@ pub async fn post_memory(
             .map_err(error::ErrorInternalServerError)?;
     }
 
-    let res: i64 = redis::Cmd::lpush(&*session_id, messages.clone())
+    let res: i64 = redis::Cmd::lpush(format!("{}_session", &*session_id), messages.clone())
         .query_async::<_, i64>(&mut conn)
         .await
         .map_err(error::ErrorInternalServerError)?;
@@ -198,7 +198,7 @@ pub async fn delete_memory(
 
     let context_key = format!("{}_context", &*session_id);
     let token_count_key = format!("{}_tokens", &*session_id);
-    let session_key = (*session_id).to_string();
+    let session_key = format!("{}_session", &*session_id);
     let keys = vec![context_key, session_key, token_count_key];
 
     redis::Cmd::del(keys)
