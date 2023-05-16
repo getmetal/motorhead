@@ -40,7 +40,7 @@ export function streamResponse(completion) {
           try {
             token = JSON.parse(message)?.choices?.[0]?.delta.content;
           } catch (err) {
-            console.log("ERROR", err);
+            // console.log("ERROR", err);
           }
 
           if (token) {
