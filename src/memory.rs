@@ -1,40 +1,19 @@
 use crate::long_term_memory::index_messages;
 use crate::models::{
-    AckResponse, AppState, MemoryMessage, MemoryMessagesAndContext, MemoryResponse,
+    AckResponse, AppState, GetSessionsQuery, MemoryMessage, MemoryMessagesAndContext,
+    MemoryResponse, NamespaceQuery,
 };
 use crate::reducer::handle_compaction;
 use actix_web::{delete, error, get, post, web, HttpResponse, Responder};
 use std::sync::Arc;
 
-#[derive(serde::Deserialize)]
-pub struct NamespaceQuery {
-    namespace: Option<String>,
-}
-
-#[derive(serde::Deserialize)]
-pub struct Pagination {
-    #[serde(default = "default_page")]
-    page: usize,
-    #[serde(default = "default_size")]
-    size: usize,
-    namespace: Option<String>,
-}
-
-fn default_page() -> usize {
-    1
-}
-
-fn default_size() -> usize {
-    10
-}
-
 #[get("/sessions")]
 pub async fn get_sessions(
-    web::Query(pagination): web::Query<Pagination>,
+    web::Query(pagination): web::Query<GetSessionsQuery>,
     _data: web::Data<Arc<AppState>>,
     redis: web::Data<redis::Client>,
 ) -> actix_web::Result<impl Responder> {
-    let Pagination {
+    let GetSessionsQuery {
         page,
         size,
         namespace,

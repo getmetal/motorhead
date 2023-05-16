@@ -128,3 +128,25 @@ pub fn parse_redisearch_response(response: &Value) -> Vec<RedisearchResult> {
         _ => vec![],
     }
 }
+
+#[derive(serde::Deserialize)]
+pub struct NamespaceQuery {
+    pub namespace: Option<String>,
+}
+
+#[derive(serde::Deserialize)]
+pub struct GetSessionsQuery {
+    #[serde(default = "default_page")]
+    pub page: usize,
+    #[serde(default = "default_size")]
+    pub size: usize,
+    pub namespace: Option<String>,
+}
+
+fn default_page() -> usize {
+    1
+}
+
+fn default_size() -> usize {
+    10
+}
