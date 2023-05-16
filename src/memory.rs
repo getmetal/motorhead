@@ -6,7 +6,6 @@ use crate::reducer::handle_compaction;
 use actix_web::{delete, error, get, post, web, HttpResponse, Responder};
 use std::sync::Arc;
 
-
 #[derive(serde::Deserialize)]
 pub struct Pagination {
     #[serde(default = "default_page")]
@@ -32,7 +31,9 @@ pub async fn get_sessions(
     let Pagination { page, size } = pagination;
 
     if page > 100 {
-        return Err(actix_web::error::ErrorBadRequest("Page size must not exceed 100"));
+        return Err(actix_web::error::ErrorBadRequest(
+            "Page size must not exceed 100",
+        ));
     }
 
     let start: isize = ((page - 1) * size) as isize; // 0-indexed
@@ -55,7 +56,6 @@ pub async fn get_sessions(
         .content_type("application/json")
         .json(session_ids))
 }
-
 
 #[get("/sessions/{session_id}/memory")]
 pub async fn get_memory(
