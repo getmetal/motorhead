@@ -11,6 +11,7 @@ authors = ["Sergio Prada <metal@getmetal.io>"]
 actix-web = "4.3"
 async-openai = "0.10.1"
 byteorder = "1.4.3"
+chrono = "0.4.24"
 env_logger = "0.10"
 futures-util = { version = "0.3.17", default-features = false, features = ["std"] }
 log = "0.4"
