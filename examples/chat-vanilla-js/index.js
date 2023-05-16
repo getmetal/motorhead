@@ -19,9 +19,7 @@ const generateSystemMessage = (context, longTermMemory = []) => {
 }
 
 const promptModel = async (query, messages, context) => {
-  const ltmRes = await retrieval(query);
-  // console.log(ltmRes)
-  const systemMessageContent = generateSystemMessage(context, ltmRes)
+  const systemMessageContent = generateSystemMessage(context)
   const systemMessageObj = { role: 'system', content: systemMessageContent }
   const completion = await openai.createChatCompletion({
     model: MODEL,
