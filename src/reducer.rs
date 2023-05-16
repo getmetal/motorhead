@@ -70,10 +70,11 @@ pub async fn handle_compaction(
     mut redis_conn: redis::aio::ConnectionManager,
 ) -> Result<(), MotorheadError> {
     let half = window_size / 2;
-    let context_key = format!("{}_context", &*session_id);
+    let session_key = format!("session:{}", &*session_id);
+    let context_key = format!("context:{}", &*session_id);
     let (messages, mut context): (Vec<String>, Option<String>) = redis::pipe()
         .cmd("LRANGE")
-        .arg(&*session_id)
+        .arg(session_key.clone())
         .arg(half)
         .arg(window_size)
         .cmd("GET")
@@ -124,10 +125,10 @@ pub async fn handle_compaction(
     }
 
     if let Some(new_context) = context {
-        let token_count_key = format!("{}_tokens", &*session_id);
+        let token_count_key = format!("tokens:{}", &*session_id);
         let redis_pipe_response_result: Result<((), (), i64), redis::RedisError> = redis::pipe()
             .cmd("LTRIM")
-            .arg(&*session_id)
+            .arg(session_key)
             .arg(0)
             .arg(half)
             .cmd("SET")
