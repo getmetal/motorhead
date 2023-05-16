@@ -7,42 +7,60 @@ use actix_web::{delete, error, get, post, web, HttpResponse, Responder};
 use std::sync::Arc;
 
 
+#[derive(serde::Deserialize)]
+pub struct Pagination {
+    #[serde(default = "default_page")]
+    page: usize,
+    #[serde(default = "default_size")]
+    size: usize,
+}
+
+fn default_page() -> usize {
+    1
+}
+
+fn default_size() -> usize {
+    10
+}
+
 #[get("/sessions")]
 pub async fn get_sessions(
-  data: web::Data<Arc<AppState>>,
-  redis: web::Data<redis::Client>,
+    web::Query(pagination): web::Query<Pagination>,
+    _data: web::Data<Arc<AppState>>,
+    redis: web::Data<redis::Client>,
 ) -> actix_web::Result<impl Responder> {
-  let mut conn = redis
-          .get_tokio_connection_manager()
-          .await
-          .map_err(error::ErrorInternalServerError)?;
+    let Pagination { page, size } = pagination;
 
-      let mut cursor: isize = 0;
-      let mut session_keys: Vec<String> = vec![];
-      loop {
-          let (next_cursor, keys): (isize, Vec<String>) = redis::cmd("SCAN")
-              .arg(cursor)
-              .arg("MATCH")
-              .arg("session:*")  // This matches all session keys
-              .query_async(&mut conn)
-              .await
-              .map_err(error::ErrorInternalServerError)?;
+    // Limit the page size to 100
+    if page > 100 {
+        return Err(actix_web::error::ErrorBadRequest("Page size must not exceed 100"));
+    }
 
-          session_keys.extend(keys);
-          cursor = next_cursor;
-          if cursor == 0 {
-              break;
-          }
-      }
+    let cursor: isize = (page * size) as isize;
 
-      let session_ids: Vec<String> = session_keys
-          .into_iter()
-          .map(|key| key.trim_start_matches("session:").to_owned())
-          .collect();
+    let mut conn = redis
+        .get_tokio_connection_manager()
+        .await
+        .map_err(error::ErrorInternalServerError)?;
 
-      Ok(HttpResponse::Ok()
-          .content_type("application/json")
-          .json(session_ids))
+    let (_next_cursor, session_keys): (isize, Vec<String>) = redis::cmd("SCAN")
+        .arg(cursor)
+        .arg("MATCH")
+        .arg("session:*")
+        .arg("COUNT")
+        .arg(size)
+        .query_async(&mut conn)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let session_ids: Vec<String> = session_keys
+        .into_iter()
+        .map(|key| key.trim_start_matches("session:").to_owned())
+        .collect();
+
+    Ok(HttpResponse::Ok()
+        .content_type("application/json")
+        .json(session_ids))
 }
 
 #[get("/sessions/{session_id}/memory")]

@@ -66,10 +66,11 @@ async fn main() -> io::Result<()> {
     });
 
     async fn on_start_logger(port: u16) -> io::Result<()> {
-        print!("\n");
+        println!();
         println!("-----------------------------------");
         println!("🧠 Motorhead running on port: {}", port);
         println!("-----------------------------------");
+        println!();
 
         Ok(())
     }
