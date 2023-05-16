@@ -31,37 +31,31 @@ pub async fn get_sessions(
 ) -> actix_web::Result<impl Responder> {
     let Pagination { page, size } = pagination;
 
-    // Limit the page size to 100
     if page > 100 {
         return Err(actix_web::error::ErrorBadRequest("Page size must not exceed 100"));
     }
 
-    let cursor: isize = (page * size) as isize;
+    let start: isize = ((page - 1) * size) as isize; // 0-indexed
+    let end: isize = (page * size - 1) as isize; // inclusive
 
     let mut conn = redis
         .get_tokio_connection_manager()
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    let (_next_cursor, session_keys): (isize, Vec<String>) = redis::cmd("SCAN")
-        .arg(cursor)
-        .arg("MATCH")
-        .arg("session:*")
-        .arg("COUNT")
-        .arg(size)
+    let session_ids: Vec<String> = redis::cmd("ZRANGE")
+        .arg("sessions")
+        .arg(start)
+        .arg(end)
         .query_async(&mut conn)
         .await
         .map_err(error::ErrorInternalServerError)?;
-
-    let session_ids: Vec<String> = session_keys
-        .into_iter()
-        .map(|key| key.trim_start_matches("session:").to_owned())
-        .collect();
 
     Ok(HttpResponse::Ok()
         .content_type("application/json")
         .json(session_ids))
 }
+
 
 #[get("/sessions/{session_id}/memory")]
 pub async fn get_memory(
@@ -151,6 +145,15 @@ pub async fn post_memory(
             .map_err(error::ErrorInternalServerError)?;
     }
 
+    // add to sorted set of sessions
+    redis::cmd("ZADD")
+        .arg("sessions")
+        .arg(chrono::Utc::now().timestamp())
+        .arg(&*session_id)
+        .query_async(&mut conn)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
     let res: i64 = redis::Cmd::lpush(format!("session:{}", &*session_id), messages.clone())
         .query_async::<_, i64>(&mut conn)
         .await
@@ -218,6 +221,13 @@ pub async fn delete_memory(
     let token_count_key = format!("tokens:{}", &*session_id);
     let session_key = format!("session:{}", &*session_id);
     let keys = vec![context_key, session_key, token_count_key];
+
+    redis::cmd("ZREM")
+        .arg("sessions")
+        .arg(&*session_id)
+        .query_async(&mut conn)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
 
     redis::Cmd::del(keys)
         .query_async(&mut conn)
