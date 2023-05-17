@@ -46,7 +46,7 @@ export const run = async () => {
 
   const chatPrompt = ChatPromptTemplate.fromPromptMessages([
     SystemMessagePromptTemplate.fromTemplate(
-      `The following is a friendly conversation between a human and an AI. The AI is talkative and provides lots of specific details from its context. If the AI does not know the answer to a question, it truthfully says it does not know.$${context}`
+      `The following is a friendly conversation between a human and an AI. The AI is talkative and provides lots of specific details from its context. If the AI does not know the answer to a question, it truthfully says it does not know.${context}`
     ),
     new MessagesPlaceholder("history"),
     HumanMessagePromptTemplate.fromTemplate("{input}"),
@@ -59,8 +59,7 @@ export const run = async () => {
   });
 
   const postToBash = async () => {
-    console.log("\n");
-    rl.question(chalk.green(``), async function(answer) {
+    rl.question(chalk.green(`\n`), async function(answer) {
       const res = await chain.call({ input: answer });
       await postToBash(res.response);
     });
