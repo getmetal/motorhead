@@ -1,5 +1,5 @@
 {
-  "name": "chat-motorhead-example",
+  "name": "chat-vanilla-js-hosted",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -17,6 +17,6 @@
   "dependencies": {
     "chalk": "^5.2.0",
     "dotenv": "^16.0.3",
-    "langchain": "^0.0.74"
+    "openai": "^3.2.1"
   }
 }
