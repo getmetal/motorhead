@@ -20,7 +20,7 @@ packaging==23.1
 pydantic==1.10.7
 python-dotenv==1.0.0
 PyYAML==6.0
-requests==2.29.0
+requests==2.31.0
 SQLAlchemy==2.0.11
 tenacity==8.2.2
 termcolor==2.3.0
