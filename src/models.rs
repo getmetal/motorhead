@@ -3,12 +3,13 @@ use async_openai::{
     error::OpenAIError,
     types::{
         ChatCompletionRequestMessageArgs, CreateChatCompletionRequestArgs,
-        CreateChatCompletionResponse, CreateEmbeddingRequestArgs, CreateEmbeddingResponse, Role,
+        CreateChatCompletionResponse, CreateEmbeddingRequestArgs, Role,
     },
     Client,
 };
 use async_trait::async_trait;
 use deadpool::managed::{Manager, RecycleResult};
+use futures_util::future::try_join_all;
 use redis::{FromRedisValue, RedisError, Value};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -77,15 +78,57 @@ impl AnyOpenAIClient {
     pub async fn create_embedding(
         &self,
         query_vec: Vec<String>,
-    ) -> Result<CreateEmbeddingResponse, OpenAIError> {
-        let request = CreateEmbeddingRequestArgs::default()
-            .model("text-embedding-ada-002")
-            .input(query_vec)
-            .build()?;
-
+    ) -> Result<Vec<Vec<f32>>, OpenAIError> {
         match self {
-            AnyOpenAIClient::Azure(client) => client.embeddings().create(request).await,
-            AnyOpenAIClient::OpenAI(client) => client.embeddings().create(request).await,
+            AnyOpenAIClient::OpenAI(client) => {
+                let request = CreateEmbeddingRequestArgs::default()
+                    .model("text-embedding-ada-002")
+                    .input(query_vec)
+                    .build()?;
+
+                let response = client.embeddings().create(request).await?;
+                let embeddings: Vec<_> = response
+                    .data
+                    .iter()
+                    .map(|data| data.embedding.clone())
+                    .collect();
+
+                Ok(embeddings)
+            }
+            AnyOpenAIClient::Azure(client) => {
+                // Create a vector of Futures
+                let tasks: Vec<_> = query_vec
+                    .into_iter()
+                    .map(|query| async {
+                        let request = CreateEmbeddingRequestArgs::default()
+                            .model("text-embedding-ada-002")
+                            .input(vec![query])
+                            .build()?;
+
+                        client.embeddings().create(request).await
+                    })
+                    .collect();
+
+                // Execute all tasks concurrently and await the results
+                let responses: Result<Vec<_>, _> = try_join_all(tasks).await;
+
+                match responses {
+                    Ok(successful_responses) => {
+                        // Extract embeddings
+                        let embeddings: Vec<_> = successful_responses
+                            .into_iter()
+                            .flat_map(|response| response.data.into_iter())
+                            .map(|data| data.embedding)
+                            .collect();
+
+                        Ok(embeddings)
+                    }
+                    Err(err) => {
+                        // Handle error here
+                        Err(err)
+                    }
+                }
+            }
         }
     }
 }

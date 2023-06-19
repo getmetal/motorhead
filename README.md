@@ -96,8 +96,16 @@ Searches are segmented (filtered) by the session id provided automatically.
 - `MOTORHEAD_LONG_TERM_MEMORY` (default:false) - Enables long term memory using Redisearch VSS.
 - `MOTORHEAD_MODEL` (default:gpt-3.5-turbo) - Model used to run the incremental summarization. Use `gpt-3.5-turbo` or `gpt-4` - otherwise some weird things might happen.
 - `PORT` (default:8000) - Motorhead Server Port
-- `OPENAI_API_KEY` (required)- [Your api key](https://platform.openai.com/account/api-keys) to connect to OpenAI.
+- `OPENAI_API_KEY`- [Your api key](https://platform.openai.com/account/api-keys) to connect to OpenAI. Required if not an Azure deploymnet or if `MOTORHEAD_LONG_TERM_MEMORY` is set to `true`.
 - `REDIS_URL` (required)- URL used to connect to `redis`.
+
+### Azure deployment
+
+*NOTE: `MOTORHEAD_LONG_TERM_MEMORY=true` won't work with Azure*. Additional Environment Variables are required for Azure deployments:
+
+- `AZURE_DEPLOYMENT_ID`
+- `AZURE_API_BASE`
+- `AZURE_API_KEY`
 
 ## How to run
 
@@ -114,4 +122,6 @@ docker run --name motorhead -p 8080:8080 -e PORT=8080 -e REDIS_URL='redis://redi
 ## Examples
 
 - [Chat JS Example](examples/chat-js/)
+- [Chat JS Vanilla Example](examples/chat-vanilla-js/)
+- [Chat JS Vanilla Hosted Example](examples/chat-vanilla-js-hosted/)
 - [Chat Python Example](examples/chat-py/)

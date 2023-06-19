@@ -19,13 +19,13 @@ pub async fn index_messages(
     mut redis_conn: redis::aio::ConnectionManager,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let contents: Vec<String> = messages.iter().map(|msg| msg.content.clone()).collect();
-    let response = openai_client.create_embedding(contents.clone()).await?;
+    let embeddings = openai_client.create_embedding(contents.clone()).await?;
 
     // TODO add used tokens let tokens_used = response.usage.total_tokens;
-    for data in response.data {
+    for (index, embedding) in embeddings.iter().enumerate() {
         let id = nanoid!();
         let key = format!("motorhead:{}", id);
-        let vector = encode(data.embedding);
+        let vector = encode(embedding.to_vec());
 
         redis::cmd("HSET")
             .arg(key)
@@ -34,9 +34,9 @@ pub async fn index_messages(
             .arg("vector")
             .arg(vector)
             .arg("content")
-            .arg(&contents[data.index as usize])
+            .arg(&contents[index])
             .arg("role")
-            .arg(&messages[data.index as usize].role)
+            .arg(&messages[index].role)
             .query_async::<_, ()>(&mut redis_conn)
             .await?;
     }
@@ -51,7 +51,8 @@ pub async fn search_messages(
     mut redis_conn: redis::aio::ConnectionManager,
 ) -> Result<Vec<RedisearchResult>, Box<dyn std::error::Error>> {
     let response = openai_client.create_embedding(vec![query]).await?;
-    let vector = encode(response.data[0].embedding.clone());
+    let embeddings = response[0].clone();
+    let vector = encode(embeddings);
     let query = format!("@session:{}=>[KNN 10 @vector $V AS dist]", session_id);
 
     let values: Vec<Value> = redis::cmd("FT.SEARCH")
