@@ -1,6 +1,7 @@
 use crate::long_term_memory::search_messages;
 use crate::models::{AppState, SearchPayload};
 use actix_web::{error, post, web, HttpResponse, Responder};
+use std::ops::Deref;
 use std::sync::Arc;
 
 #[post("/sessions/{session_id}/retrieval")]
@@ -19,9 +20,10 @@ pub async fn run_retrieval(
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    let openai_client = data.openai_client.clone();
+    let client_wrapper = data.openai_pool.get().await.unwrap();
+    let client = client_wrapper.deref();
 
-    match search_messages(payload.text, session_id.clone(), openai_client, conn).await {
+    match search_messages(payload.text, session_id.clone(), client, conn).await {
         Ok(results) => Ok(HttpResponse::Ok().json(results)),
         Err(e) => {
             log::error!("Error Retrieval API: {:?}", e);

@@ -13,12 +13,12 @@ mod redis_utils;
 mod reducer;
 mod retrieval;
 
+use deadpool::managed::Timeouts;
 use healthcheck::get_health;
-use memory::{delete_memory, get_memory, post_memory, get_sessions};
-use models::AppState;
+use memory::{delete_memory, get_memory, get_sessions, post_memory};
+use models::{AppState, OpenAIClientManager};
 use redis_utils::ensure_redisearch_index;
 use retrieval::run_retrieval;
-
 
 #[actix_web::main]
 async fn main() -> io::Result<()> {
@@ -26,7 +26,15 @@ async fn main() -> io::Result<()> {
 
     log::info!("Starting Motorhead 🤘");
 
-    let openai_client = async_openai::Client::new();
+    let manager = OpenAIClientManager {};
+    let timeouts = Timeouts::wait_millis(2000); // Customize timeouts as needed
+    let max_size = 8; // Customize max pool size as needed
+    let openai_pool = deadpool::managed::Pool::builder(manager)
+        .max_size(max_size)
+        .timeouts(timeouts)
+        .build()
+        .unwrap();
+
     let redis_url = env::var("REDIS_URL").expect("$REDIS_URL is not set");
     let redis = redis::Client::open(redis_url).unwrap();
 
@@ -60,7 +68,7 @@ async fn main() -> io::Result<()> {
     let session_state = Arc::new(AppState {
         window_size,
         session_cleanup,
-        openai_client,
+        openai_pool,
         long_term_memory,
         model,
     });

@@ -1,14 +1,10 @@
-use crate::models::MotorheadError;
-use async_openai::{
-    types::{ChatCompletionRequestMessageArgs, CreateChatCompletionRequestArgs, Role},
-    Client,
-};
+use crate::models::{AnyOpenAIClient, MotorheadError};
 use std::error::Error;
 use tiktoken_rs::p50k_base;
 
 pub async fn incremental_summarization(
     model: String,
-    openai_client: Client,
+    openai_client: &AnyOpenAIClient,
     context: Option<String>,
     mut messages: Vec<String>,
 ) -> Result<(String, u32), Box<dyn Error + Send + Sync>> {
@@ -37,16 +33,19 @@ New lines of conversation:
 New summary:
 "#
     );
-    let request = CreateChatCompletionRequestArgs::default()
-        .max_tokens(512u16)
-        .model(model)
-        .messages([ChatCompletionRequestMessageArgs::default()
-            .role(Role::User)
-            .content(progresive_prompt)
-            .build()?])
-        .build()?;
+    // let request = CreateChatCompletionRequestArgs::default()
+    //     .max_tokens(512u16)
+    //     .model(model)
+    //     .messages([ChatCompletionRequestMessageArgs::default()
+    //         .role(Role::User)
+    //         .content(progresive_prompt)
+    //         .build()?])
+    //     .build()?;
 
-    let response = openai_client.chat().create(request).await?;
+    // let response = openai_client.chat().create(request).await?;
+    let response = openai_client
+        .create_chat_completion(&model, &progresive_prompt)
+        .await?;
 
     let completion = response
         .choices
@@ -66,7 +65,7 @@ pub async fn handle_compaction(
     session_id: String,
     model: String,
     window_size: i64,
-    openai_client: Client,
+    openai_client: &AnyOpenAIClient,
     mut redis_conn: redis::aio::ConnectionManager,
 ) -> Result<(), MotorheadError> {
     let half = window_size / 2;
@@ -102,7 +101,7 @@ pub async fn handle_compaction(
         } else {
             let (summary, summary_tokens_used) = incremental_summarization(
                 model.to_string(),
-                openai_client.clone(),
+                openai_client,
                 context.clone(),
                 temp_messages,
             )
@@ -118,8 +117,7 @@ pub async fn handle_compaction(
 
     if !temp_messages.is_empty() {
         let (summary, summary_tokens_used) =
-            incremental_summarization(model, openai_client.clone(), context.clone(), temp_messages)
-                .await?;
+            incremental_summarization(model, openai_client, context.clone(), temp_messages).await?;
         total_tokens += summary_tokens_used;
         context = Some(summary);
     }
