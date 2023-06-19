@@ -21,9 +21,9 @@ pub async fn run_retrieval(
         .map_err(error::ErrorInternalServerError)?;
 
     let client_wrapper = data.openai_pool.get().await.unwrap();
-    let client = client_wrapper.deref();
+    let openai_client = client_wrapper.deref();
 
-    match search_messages(payload.text, session_id.clone(), client, conn).await {
+    match search_messages(payload.text, session_id.clone(), openai_client, conn).await {
         Ok(results) => Ok(HttpResponse::Ok().json(results)),
         Err(e) => {
             log::error!("Error Retrieval API: {:?}", e);

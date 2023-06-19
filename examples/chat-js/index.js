@@ -59,6 +59,7 @@ export const run = async () => {
   });
 
   const postToBash = async () => {
+    console.log('\n')
     rl.question(chalk.green(`\n`), async function(answer) {
       const res = await chain.call({ input: answer });
       await postToBash(res.response);

@@ -183,7 +183,6 @@ pub async fn post_memory(
             session_cleanup.insert((&*session_id.to_string()).into(), true);
             let session_cleanup = Arc::clone(&state.session_cleanup);
             let session_id = session_id.clone();
-            // let openai_client = state.openai_client.clone();
             let window_size = state.window_size;
             let model = state.model.to_string();
             let pool = state.openai_pool.clone();

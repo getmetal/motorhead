@@ -15,15 +15,14 @@ use std::collections::HashMap;
 use std::env;
 use std::error::Error;
 use std::sync::Arc;
-use tokio::sync::Mutex; // Make sure to import FutureExt
+use tokio::sync::Mutex;
 
-// Define the manager for the AnyOpenAIClient
 pub struct OpenAIClientManager {}
 
 #[async_trait]
 impl Manager for OpenAIClientManager {
-    type Type = AnyOpenAIClient; // The type of object this manager deals with.
-    type Error = MotorheadError; // The error type.
+    type Type = AnyOpenAIClient;
+    type Error = MotorheadError;
 
     async fn create(&self) -> Result<AnyOpenAIClient, MotorheadError> {
         let openai_client = match (
@@ -48,8 +47,6 @@ impl Manager for OpenAIClientManager {
         Ok(())
     }
 }
-
-// Create the pool
 
 pub enum AnyOpenAIClient {
     Azure(Client<AzureConfig>),

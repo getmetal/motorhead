@@ -1,10 +1,3 @@
-use actix_web::{error, middleware, web, App, HttpResponse, HttpServer};
-use std::collections::HashMap;
-use std::env;
-use std::io;
-use std::sync::Arc;
-use tokio::sync::Mutex;
-
 mod healthcheck;
 mod long_term_memory;
 mod memory;
@@ -13,12 +6,17 @@ mod redis_utils;
 mod reducer;
 mod retrieval;
 
-use deadpool::managed::Timeouts;
+use actix_web::{error, middleware, web, App, HttpResponse, HttpServer};
 use healthcheck::get_health;
 use memory::{delete_memory, get_memory, get_sessions, post_memory};
 use models::{AppState, OpenAIClientManager};
 use redis_utils::ensure_redisearch_index;
 use retrieval::run_retrieval;
+use std::collections::HashMap;
+use std::env;
+use std::io;
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
 #[actix_web::main]
 async fn main() -> io::Result<()> {
@@ -27,11 +25,9 @@ async fn main() -> io::Result<()> {
     log::info!("Starting Motorhead 🤘");
 
     let manager = OpenAIClientManager {};
-    let timeouts = Timeouts::wait_millis(2000); // Customize timeouts as needed
-    let max_size = 8; // Customize max pool size as needed
+    let max_size = 8;
     let openai_pool = deadpool::managed::Pool::builder(manager)
         .max_size(max_size)
-        .timeouts(timeouts)
         .build()
         .unwrap();
 

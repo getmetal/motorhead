@@ -33,16 +33,7 @@ New lines of conversation:
 New summary:
 "#
     );
-    // let request = CreateChatCompletionRequestArgs::default()
-    //     .max_tokens(512u16)
-    //     .model(model)
-    //     .messages([ChatCompletionRequestMessageArgs::default()
-    //         .role(Role::User)
-    //         .content(progresive_prompt)
-    //         .build()?])
-    //     .build()?;
 
-    // let response = openai_client.chat().create(request).await?;
     let response = openai_client
         .create_chat_completion(&model, &progresive_prompt)
         .await?;

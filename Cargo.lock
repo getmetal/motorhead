@@ -1167,14 +1167,12 @@ name = "motorhead"
 version = "0.1.0"
 dependencies = [
  "actix-web",
- "anyhow",
  "async-openai",
  "async-trait",
  "byteorder",
  "chrono",
  "deadpool",
  "env_logger",
- "futures",
  "futures-util",
  "log",
  "nanoid",
