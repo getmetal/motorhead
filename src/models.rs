@@ -96,7 +96,6 @@ impl AnyOpenAIClient {
                 Ok(embeddings)
             }
             AnyOpenAIClient::Azure(client) => {
-                // Create a vector of Futures
                 let tasks: Vec<_> = query_vec
                     .into_iter()
                     .map(|query| async {
@@ -109,12 +108,10 @@ impl AnyOpenAIClient {
                     })
                     .collect();
 
-                // Execute all tasks concurrently and await the results
                 let responses: Result<Vec<_>, _> = try_join_all(tasks).await;
 
                 match responses {
                     Ok(successful_responses) => {
-                        // Extract embeddings
                         let embeddings: Vec<_> = successful_responses
                             .into_iter()
                             .flat_map(|response| response.data.into_iter())
@@ -123,10 +120,7 @@ impl AnyOpenAIClient {
 
                         Ok(embeddings)
                     }
-                    Err(err) => {
-                        // Handle error here
-                        Err(err)
-                    }
+                    Err(err) => Err(err),
                 }
             }
         }
