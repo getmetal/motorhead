@@ -5,6 +5,7 @@ use crate::models::{
 };
 use crate::reducer::handle_compaction;
 use actix_web::{delete, error, get, post, web, HttpResponse, Responder};
+use std::ops::Deref;
 use std::sync::Arc;
 
 #[get("/sessions")]
@@ -160,12 +161,14 @@ pub async fn post_memory(
         .map_err(error::ErrorInternalServerError)?;
 
     if data.long_term_memory {
-        let openai_client = data.openai_client.clone();
         let session = session_id.clone();
         let conn_clone = conn.clone();
+        let pool = data.openai_pool.clone();
+
         tokio::spawn(async move {
-            if let Err(e) =
-                index_messages(memory_messages_clone, session, openai_client, conn_clone).await
+            let client_wrapper = pool.get().await.unwrap();
+            let client = client_wrapper.deref();
+            if let Err(e) = index_messages(memory_messages_clone, session, client, conn_clone).await
             {
                 log::error!("Error in index_messages: {:?}", e);
             }
@@ -180,20 +183,18 @@ pub async fn post_memory(
             session_cleanup.insert((&*session_id.to_string()).into(), true);
             let session_cleanup = Arc::clone(&state.session_cleanup);
             let session_id = session_id.clone();
-            let openai_client = state.openai_client.clone();
             let window_size = state.window_size;
             let model = state.model.to_string();
+            let pool = state.openai_pool.clone();
 
             tokio::spawn(async move {
                 log::info!("running compact");
-                let _compaction_result = handle_compaction(
-                    session_id.to_string(),
-                    model,
-                    window_size,
-                    openai_client,
-                    conn,
-                )
-                .await;
+                let client_wrapper = pool.get().await.unwrap();
+                let client = client_wrapper.deref();
+
+                let _compaction_result =
+                    handle_compaction(session_id.to_string(), model, window_size, client, conn)
+                        .await;
 
                 let mut lock = session_cleanup.lock().await;
                 lock.remove(&session_id);

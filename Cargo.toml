@@ -9,9 +9,11 @@ authors = ["Sergio Prada <metal@getmetal.io>"]
 
 [dependencies]
 actix-web = "4.3"
-async-openai = "0.10.1"
+async-openai = "0.11.0"
+async-trait = "0.1.68"
 byteorder = "1.4.3"
 chrono = "0.4.24"
+deadpool = "0.9.5"
 env_logger = "0.10"
 futures-util = { version = "0.3.17", default-features = false, features = ["std"] }
 log = "0.4"
