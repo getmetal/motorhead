@@ -11,7 +11,7 @@ pub fn ensure_redisearch_index(
     let index_info: Result<redis::Value, _> = redis::cmd("FT.INFO").arg(index_name).query(&mut con);
 
     if let Err(err) = index_info {
-        if err.to_string().contains("Unknown: Index name") {
+        if err.to_string().to_lowercase().contains("unknown: index name") {
             redis::cmd("FT.CREATE")
                 .arg(index_name)
                 .arg("ON")
