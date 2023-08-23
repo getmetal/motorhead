@@ -12,6 +12,7 @@ RUN apt-get update -y && \
   rustup target add x86_64-unknown-linux-gnu
 
 # cache dependencies
+ENV CARGO_NET_GIT_FETCH_WITH_CLI=true
 RUN cargo build --release
 RUN rm src/*.rs
 
