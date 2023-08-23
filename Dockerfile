@@ -1,4 +1,4 @@
-FROM rust:1.68-slim-buster as build
+FROM rust:1.68-bullseye as build
 
 RUN USER=root cargo new --bin motorhead
 WORKDIR /motorhead
@@ -23,7 +23,7 @@ COPY ./src ./src
 RUN rm ./target/release/deps/motorhead*
 RUN cargo build --release
 
-FROM debian:buster-slim
+FROM debian:bullseye
 
 RUN apt-get update && apt install -y openssl ca-certificates
 
