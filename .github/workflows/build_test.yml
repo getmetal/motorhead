@@ -20,21 +20,3 @@ jobs:
       run: cargo build --verbose
     - name: Run tests
       run: cargo test --verbose
-
-  docker-image:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v3
- 
-      - name: Set up Depot CLI
-        uses: depot/setup-action@v1
- 
-      - name: Build and push
-        uses: depot/build-push-action@v1
-        with:
-          project: wb79dhkl5q
-          token: ${{ secrets.DEPOT_PROJECT_TOKEN }}
-          platforms: linux/amd64,linux/arm64
-          push: false
-          tags: test
