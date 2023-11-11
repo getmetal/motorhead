@@ -17,6 +17,6 @@
   "dependencies": {
     "chalk": "^5.2.0",
     "dotenv": "^16.0.3",
-    "langchain": "^0.0.74"
+    "langchain": "^0.0.186"
   }
 }
