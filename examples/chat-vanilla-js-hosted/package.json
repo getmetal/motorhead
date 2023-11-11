@@ -17,6 +17,6 @@
   "dependencies": {
     "chalk": "^5.2.0",
     "dotenv": "^16.0.3",
-    "openai": "^3.2.1"
+    "openai": "^4.17.4"
   }
 }
