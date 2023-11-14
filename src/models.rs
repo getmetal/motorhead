@@ -29,17 +29,36 @@ impl Manager for OpenAIClientManager {
         let openai_client = match (
             env::var("AZURE_API_KEY"),
             env::var("AZURE_DEPLOYMENT_ID"),
+            env::var("AZURE_DEPLOYMENT_ID_ADA"),
             env::var("AZURE_API_BASE"),
         ) {
-            (Ok(azure_api_key), Ok(azure_deployment_id), Ok(azure_api_base)) => {
+            (
+                Ok(azure_api_key),
+                Ok(azure_deployment_id),
+                Ok(azure_deployment_id_ada),
+                Ok(azure_api_base),
+            ) => {
                 let config = AzureConfig::new()
-                    .with_api_base(azure_api_base)
-                    .with_api_key(azure_api_key)
+                    .with_api_base(&azure_api_base)
+                    .with_api_key(&azure_api_key)
                     .with_deployment_id(azure_deployment_id)
                     .with_api_version("2023-05-15");
-                AnyOpenAIClient::Azure(Client::with_config(config))
+
+                let config_ada = AzureConfig::new()
+                    .with_api_base(&azure_api_base)
+                    .with_api_key(&azure_api_key)
+                    .with_deployment_id(azure_deployment_id_ada)
+                    .with_api_version("2023-05-15");
+
+                AnyOpenAIClient::Azure {
+                    embedding_client: Client::with_config(config_ada),
+                    completion_client: Client::with_config(config),
+                }
             }
-            _ => AnyOpenAIClient::OpenAI(Client::new()),
+            _ => AnyOpenAIClient::OpenAI {
+                embedding_client: Client::new(),
+                completion_client: Client::new(),
+            },
         };
         Ok(openai_client)
     }
@@ -50,8 +69,14 @@ impl Manager for OpenAIClientManager {
 }
 
 pub enum AnyOpenAIClient {
-    Azure(Client<AzureConfig>),
-    OpenAI(Client<OpenAIConfig>),
+    Azure {
+        embedding_client: Client<AzureConfig>,
+        completion_client: Client<AzureConfig>,
+    },
+    OpenAI {
+        embedding_client: Client<OpenAIConfig>,
+        completion_client: Client<OpenAIConfig>,
+    },
 }
 
 impl AnyOpenAIClient {
@@ -70,8 +95,12 @@ impl AnyOpenAIClient {
             .build()?;
 
         match self {
-            AnyOpenAIClient::Azure(client) => client.chat().create(request).await,
-            AnyOpenAIClient::OpenAI(client) => client.chat().create(request).await,
+            AnyOpenAIClient::Azure {
+                completion_client, ..
+            } => completion_client.chat().create(request).await,
+            AnyOpenAIClient::OpenAI {
+                completion_client, ..
+            } => completion_client.chat().create(request).await,
         }
     }
 
@@ -80,13 +109,15 @@ impl AnyOpenAIClient {
         query_vec: Vec<String>,
     ) -> Result<Vec<Vec<f32>>, OpenAIError> {
         match self {
-            AnyOpenAIClient::OpenAI(client) => {
+            AnyOpenAIClient::OpenAI {
+                embedding_client, ..
+            } => {
                 let request = CreateEmbeddingRequestArgs::default()
                     .model("text-embedding-ada-002")
                     .input(query_vec)
                     .build()?;
 
-                let response = client.embeddings().create(request).await?;
+                let response = embedding_client.embeddings().create(request).await?;
                 let embeddings: Vec<_> = response
                     .data
                     .iter()
@@ -95,7 +126,9 @@ impl AnyOpenAIClient {
 
                 Ok(embeddings)
             }
-            AnyOpenAIClient::Azure(client) => {
+            AnyOpenAIClient::Azure {
+                embedding_client, ..
+            } => {
                 let tasks: Vec<_> = query_vec
                     .into_iter()
                     .map(|query| async {
@@ -104,7 +137,7 @@ impl AnyOpenAIClient {
                             .input(vec![query])
                             .build()?;
 
-                        client.embeddings().create(request).await
+                        embedding_client.embeddings().create(request).await
                     })
                     .collect();
 
