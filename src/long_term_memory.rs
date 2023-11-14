@@ -53,7 +53,7 @@ pub async fn search_messages(
     let response = openai_client.create_embedding(vec![query]).await?;
     let embeddings = response[0].clone();
     let vector = encode(embeddings);
-    let query = format!("@session:{}=>[KNN 10 @vector $V AS dist]", session_id);
+    let query = format!("@session:{{{}}}=>[KNN 10 @vector $V AS dist]", session_id);
 
     let values: Vec<Value> = redis::cmd("FT.SEARCH")
         .arg("motorhead")

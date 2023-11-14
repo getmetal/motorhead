@@ -101,9 +101,10 @@ Searches are segmented (filtered) by the session id provided automatically.
 
 ### Azure deployment
 
-*NOTE: `MOTORHEAD_LONG_TERM_MEMORY=true` won't work with Azure*. Additional Environment Variables are required for Azure deployments:
+Additional Environment Variables are required for Azure deployments:
 
 - `AZURE_DEPLOYMENT_ID`
+- `AZURE_DEPLOYMENT_ID_ADA`
 - `AZURE_API_BASE`
 - `AZURE_API_KEY`
 
