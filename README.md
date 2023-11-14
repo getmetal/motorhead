@@ -96,7 +96,7 @@ Searches are segmented (filtered) by the session id provided automatically.
 - `MOTORHEAD_LONG_TERM_MEMORY` (default:false) - Enables long term memory using Redisearch VSS.
 - `MOTORHEAD_MODEL` (default:gpt-3.5-turbo) - Model used to run the incremental summarization. Use `gpt-3.5-turbo` or `gpt-4` - otherwise some weird things might happen.
 - `PORT` (default:8000) - Motorhead Server Port
-- `OPENAI_API_KEY`- [Your api key](https://platform.openai.com/account/api-keys) to connect to OpenAI. Required if not an Azure deploymnet or if `MOTORHEAD_LONG_TERM_MEMORY` is set to `true`.
+- `OPENAI_API_KEY`- [Your api key](https://platform.openai.com/account/api-keys) to connect to OpenAI.
 - `REDIS_URL` (required)- URL used to connect to `redis`.
 
 ### Azure deployment
