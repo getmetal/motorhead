@@ -31,6 +31,7 @@ impl Manager for OpenAIClientManager {
             env::var("AZURE_DEPLOYMENT_ID"),
             env::var("AZURE_DEPLOYMENT_ID_ADA"),
             env::var("AZURE_API_BASE"),
+            env::var("OPENAI_API_BASE"),
         ) {
             (
                 Ok(azure_api_key),
@@ -52,6 +53,17 @@ impl Manager for OpenAIClientManager {
 
                 AnyOpenAIClient::Azure {
                     embedding_client: Client::with_config(config_ada),
+                    completion_client: Client::with_config(config),
+                }
+            }
+            (
+                Ok(openai_api_base),
+            ) => {
+                let config = OpenAIConfig::new()
+                    .with_api_base(&openai_api_base);
+
+                AnyOpenAIClient::OpenAI {
+                    embedding_client: Client::with_config(config),
                     completion_client: Client::with_config(config),
                 }
             }
