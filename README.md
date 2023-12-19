@@ -98,6 +98,7 @@ Searches are segmented (filtered) by the session id provided automatically.
 - `PORT` (default:8000) - Motorhead Server Port
 - `OPENAI_API_KEY`- [Your api key](https://platform.openai.com/account/api-keys) to connect to OpenAI.
 - `REDIS_URL` (required)- URL used to connect to `redis`.
+- `OPENAI_API_BASE` (default:https://api.openai.com/v1) - OpenAI API Base URL
 
 ### Azure deployment
 
