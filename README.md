@@ -1,6 +1,7 @@
 <h1 align="center" >
-🧠 Motorhead
+🧠 Motorhead (DEPRECATED)
 </h1>
+<h2>Support is no longer maintained for this project.</h2>
 <p align="center">
     <a href="https://github.com/getmetal/motorhead/blob/main/LICENSE">
     <img src="https://img.shields.io/github/license/getmetal/motorhead?style=flat&label=license&logo=github&color=4f46e5&logoColor=fff" alt="License" />
