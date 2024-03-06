@@ -59,12 +59,12 @@ impl Manager for OpenAIClientManager {
                 let openai_api_base = env::var("OPENAI_API_BASE");
 
                 if let Ok(openai_api_base) = openai_api_base {
-                    let embedding_config = OpenAIConfig::default().with_api_base(&openai_api_base);
-                    let completion_config = OpenAIConfig::default().with_api_base(&openai_api_base);
+                    let embedding_config = OpenAIConfig::new().api_base(&openai_api_base);
+                    let completion_config = OpenAIConfig::new().api_base(&openai_api_base);
 
                     AnyOpenAIClient::OpenAI {
-                        embedding_client: Client::with_config(embedding_config),
-                        completion_client: Client::with_config(completion_config),
+                        embedding_client: Client::new(&embedding_config),
+                        completion_client: Client::new(&completion_config),
                     }
                 } else {
                     AnyOpenAIClient::OpenAI {

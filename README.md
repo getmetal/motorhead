@@ -99,7 +99,7 @@ Searches are segmented (filtered) by the session id provided automatically.
 - `PORT` (default:8000) - Motorhead Server Port
 - `OPENAI_API_KEY`- [Your api key](https://platform.openai.com/account/api-keys) to connect to OpenAI.
 - `REDIS_URL` (required)- URL used to connect to `redis`.
-- `OPENAI_API_BASE` (default:https://api.openai.com/v1) - OpenAI API Base URL
+- `OPENAI_API_BASE` (default:https://api.openai.com/v1) - This environment variable specifies the base URL for the OpenAI API. It's used by the Motorhead server to make API calls to OpenAI for its operations. In most cases, the default value should suffice. However, if you're working with a different OpenAI API endpoint or in an environment where the standard OpenAI endpoints are overridden, you'll need to set this variable accordingly. To set it, use `OPENAI_API_BASE='your_custom_api_base_url'` in your environment configuration.
 
 ### Azure deployment
 
