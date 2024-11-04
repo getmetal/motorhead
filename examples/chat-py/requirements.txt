@@ -12,7 +12,7 @@ marshmallow==3.19.0
 marshmallow-enum==1.5.1
 multidict==6.0.4
 mypy-extensions==1.0.0
-numexpr==2.8.4
+numexpr==2.8.5
 numpy==1.24.3
 openai==0.27.5
 openapi-schema-pydantic==1.2.4
