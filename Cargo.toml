@@ -9,7 +9,7 @@ authors = ["Sergio Prada <metal@getmetal.io>"]
 
 [dependencies]
 actix-web = "4.3"
-async-openai = "0.11.0"
+async-openai = "0.12.2"
 async-trait = "0.1.68"
 byteorder = "1.4.3"
 chrono = "0.4.24"
