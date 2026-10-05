@@ -1,4 +1,6 @@
 <h1 align="center" >
+
+[![Deploy to Railyard](https://app.railyard.run/deploy/badge)](https://app.railyard.run/deploy?repo=https://github.com/getmetal/motorhead)
 🧠 Motorhead (DEPRECATED)
 </h1>
 <h2>Support is no longer maintained for this project.</h2>
