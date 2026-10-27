@@ -1,4 +1,4 @@
-use crate::models::{AnyOpenAIClient, MotorheadError};
+use crate::models::{AnyOpenAIClient, MemoryMessage, MotorheadError};
 use std::error::Error;
 use tiktoken_rs::p50k_base;
 
@@ -82,12 +82,17 @@ pub async fn handle_compaction(
     let mut total_tokens_temp = 0;
 
     for message in messages {
+        let display_text = if let Ok(msg) = serde_json::from_str::<MemoryMessage>(&message) {
+            format!("{}: {}", msg.role, msg.content)
+        } else {
+            message.clone()
+        };
         let bpe = p50k_base().unwrap();
-        let message_tokens = bpe.encode_with_special_tokens(&message);
+        let message_tokens = bpe.encode_with_special_tokens(&display_text);
         let message_tokens_used = message_tokens.len();
 
         if total_tokens_temp + message_tokens_used <= max_message_tokens {
-            temp_messages.push(message);
+            temp_messages.push(display_text);
             total_tokens_temp += message_tokens_used;
         } else {
             let (summary, summary_tokens_used) = incremental_summarization(
@@ -101,7 +106,7 @@ pub async fn handle_compaction(
             total_tokens += summary_tokens_used;
 
             context = Some(summary);
-            temp_messages = vec![message];
+            temp_messages = vec![display_text];
             total_tokens_temp = message_tokens_used;
         }
     }

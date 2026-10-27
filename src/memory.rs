@@ -89,12 +89,16 @@ pub async fn get_memory(
 
     let messages: Vec<MemoryMessage> = messages
         .into_iter()
-        .filter_map(|message| {
-            let mut parts = message.splitn(2, ": ");
+        .filter_map(|raw| {
+            if let Ok(msg) = serde_json::from_str::<MemoryMessage>(&raw) {
+                return Some(msg);
+            }
+            let mut parts = raw.splitn(2, ": ");
             match (parts.next(), parts.next()) {
                 (Some(role), Some(content)) => Some(MemoryMessage {
                     role: role.to_string(),
                     content: content.to_string(),
+                    id: None,
                 }),
                 _ => None,
             }
@@ -125,12 +129,25 @@ pub async fn post_memory(
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    let memory_messages_clone: Vec<MemoryMessage> = memory_messages.messages.to_vec();
-
-    let messages: Vec<String> = memory_messages
+    let messages_with_id: Vec<MemoryMessage> = memory_messages
         .messages
         .into_iter()
-        .map(|memory_message| format!("{}: {}", memory_message.role, memory_message.content))
+        .map(|mut msg| {
+            if msg.id.is_none() {
+                msg.id = Some(nanoid::nanoid!());
+            }
+            msg
+        })
+        .collect();
+
+    let memory_messages_clone: Vec<MemoryMessage> = messages_with_id.clone();
+
+    let messages: Vec<String> = messages_with_id
+        .into_iter()
+        .map(|memory_message| {
+            serde_json::to_string(&memory_message)
+                .unwrap_or_else(|_| format!("{}: {}", memory_message.role, memory_message.content))
+        })
         .collect();
 
     // If new context is passed in we overwrite the existing one
@@ -151,7 +168,7 @@ pub async fn post_memory(
         .arg(sessions_key)
         .arg(chrono::Utc::now().timestamp())
         .arg(&*session_id)
-        .query_async(&mut conn)
+        .query_async::<_, ()>(&mut conn)
         .await
         .map_err(error::ErrorInternalServerError)?;
 
@@ -232,12 +249,12 @@ pub async fn delete_memory(
     redis::cmd("ZREM")
         .arg(sessions_key)
         .arg(&*session_id)
-        .query_async(&mut conn)
+        .query_async::<_, ()>(&mut conn)
         .await
         .map_err(error::ErrorInternalServerError)?;
 
     redis::Cmd::del(keys)
-        .query_async(&mut conn)
+        .query_async::<_, ()>(&mut conn)
         .await
         .map_err(error::ErrorInternalServerError)?;
 
@@ -246,3 +263,71 @@ pub async fn delete_memory(
         .content_type("application/json")
         .json(response))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_memory_message_serde_with_id() {
+        let msg = MemoryMessage {
+            role: "Human".to_string(),
+            content: "Hello".to_string(),
+            id: Some("custom-id-123".to_string()),
+        };
+        let json_str = serde_json::to_string(&msg).unwrap();
+        assert!(json_str.contains("\"id\":\"custom-id-123\""));
+
+        let deserialized: MemoryMessage = serde_json::from_str(&json_str).unwrap();
+        assert_eq!(deserialized, msg);
+    }
+
+    #[test]
+    fn test_memory_message_serde_without_id_omits_field() {
+        let msg = MemoryMessage {
+            role: "AI".to_string(),
+            content: "Greetings".to_string(),
+            id: None,
+        };
+        let json_str = serde_json::to_string(&msg).unwrap();
+        assert!(!json_str.contains("\"id\""));
+
+        let deserialized: MemoryMessage = serde_json::from_str(&json_str).unwrap();
+        assert_eq!(deserialized, msg);
+    }
+
+    #[test]
+    fn test_memory_message_deserialization_aliases() {
+        let json_kebab = r#"{"role":"Human","content":"Test","message-id":"uuid-kebab"}"#;
+        let deserialized_kebab: MemoryMessage = serde_json::from_str(json_kebab).unwrap();
+        assert_eq!(deserialized_kebab.id.as_deref(), Some("uuid-kebab"));
+
+        let json_snake = r#"{"role":"Human","content":"Test","message_id":"uuid-snake"}"#;
+        let deserialized_snake: MemoryMessage = serde_json::from_str(json_snake).unwrap();
+        assert_eq!(deserialized_snake.id.as_deref(), Some("uuid-snake"));
+    }
+
+    #[test]
+    fn test_legacy_format_fallback() {
+        let legacy_raw = "Human: What is Motorhead?";
+        let mut parts = legacy_raw.splitn(2, ": ");
+        let parsed = match (parts.next(), parts.next()) {
+            (Some(role), Some(content)) => Some(MemoryMessage {
+                role: role.to_string(),
+                content: content.to_string(),
+                id: None,
+            }),
+            _ => None,
+        };
+
+        assert_eq!(
+            parsed,
+            Some(MemoryMessage {
+                role: "Human".to_string(),
+                content: "What is Motorhead?".to_string(),
+                id: None,
+            })
+        );
+    }
+}
+
