@@ -187,10 +187,12 @@ pub struct SearchPayload {
     pub text: String,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct MemoryMessage {
     pub role: String,
     pub content: String,
+    #[serde(default, skip_serializing_if = "Option::is_none", alias = "message-id", alias = "message_id")]
+    pub id: Option<String>,
 }
 
 #[derive(Deserialize)]

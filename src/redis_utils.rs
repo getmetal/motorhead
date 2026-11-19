@@ -40,7 +40,7 @@ pub fn ensure_redisearch_index(
                 .arg(vector_dimensions.to_string())
                 .arg("DISTANCE_METRIC")
                 .arg(distance_metric)
-                .query(&mut con)?;
+                .query::<()>(&mut con)?;
         } else {
             return Err(err);
         }
