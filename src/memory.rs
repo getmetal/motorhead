@@ -1,4 +1,5 @@
 use crate::long_term_memory::index_messages;
+use uuid::Uuid;
 use crate::models::{
     AckResponse, AppState, GetSessionsQuery, MemoryMessage, MemoryMessagesAndContext,
     MemoryResponse, NamespaceQuery,
@@ -88,18 +89,19 @@ pub async fn get_memory(
         .unwrap_or(0);
 
     let messages: Vec<MemoryMessage> = messages
-        .into_iter()
-        .filter_map(|message| {
-            let mut parts = message.splitn(2, ": ");
-            match (parts.next(), parts.next()) {
-                (Some(role), Some(content)) => Some(MemoryMessage {
-                    role: role.to_string(),
-                    content: content.to_string(),
-                }),
-                _ => None,
-            }
-        })
-        .collect();
+            .into_iter()
+            .filter_map(|message| {
+                let mut parts = message.splitn(2, ": ");
+                match (parts.next(), parts.next()) {
+                    (Some(role), Some(content)) => Some(MemoryMessage {
+                        role: role.to_string(),
+                        content: content.to_string(),
+                        message_id: Uuid::new_v4().to_string(),
+                    }),
+                    _ => None,
+                }
+            })
+            .collect();
 
     let response = MemoryResponse {
         messages,
@@ -130,7 +132,10 @@ pub async fn post_memory(
     let messages: Vec<String> = memory_messages
         .messages
         .into_iter()
-        .map(|memory_message| format!("{}: {}", memory_message.role, memory_message.content))
+        .map(|memory_message| {
+            let message_id = Uuid::new_v4().to_string();
+            format!("{}: {}", memory_message.role, memory_message.content, message_id)
+        })
         .collect();
 
     // If new context is passed in we overwrite the existing one
@@ -237,9 +242,10 @@ pub async fn delete_memory(
         .map_err(error::ErrorInternalServerError)?;
 
     redis::Cmd::del(keys)
-        .query_async(&mut conn)
-        .await
-        .map_err(error::ErrorInternalServerError)?;
+            .arg(&message_id)
+            .query_async(&mut conn)
+            .await
+            .map_err(error::ErrorInternalServerError)?;
 
     let response = AckResponse { status: "Ok" };
     Ok(HttpResponse::Ok()
